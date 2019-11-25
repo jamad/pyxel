@@ -12,9 +12,8 @@ class Pacman:#pacman自体を生成するクラス
 
 class App:
     def __init__(self):
-        init(128,128,caption="pacman-ish", fps=25,scale=2)
+        init(128,140,caption="pacman-ish", fps=25,scale=2)
         load('pacman.pyxres')
-
         self.pacman=Pacman() #################  抜けてるだろ！
         self.tilemap_state=tilemap(0)#################  抜けてるだろ！ 超重要！！！
 
@@ -33,6 +32,11 @@ class App:
             self.pacman.T=[x+y for x,y in zip(self.pacman.T,self.pacman.V)]# タイルの座標を進行方向に合わせて変える
 
         self.pacman.P=[x+y for x,y in zip(self.pacman.P,self.pacman.V)]# 毎フレーム毎に描画する座標を変更していく
+
+        # update tile 
+        if self.tilemap_state.get(self.pacman.T[0],self.pacman.T[1]) == 64:self.pacman.score += 30# ノーマルクッキーに触れたら
+        elif self.tilemap_state.get(self.pacman.T[0],self.pacman.T[1]) == 65:self.pacman.score += 100# パワークッキーに触れたら
+        pyxel.tilemap(0).set(self.pacman.T[0],self.pacman.T[1],5)# パックマンがノーマルクッキーとパワークッキーを踏んだら、何もないブロックに変える
 
     def draw(self):# ゲーム内描画処理
         cls(0)# 真っ黒背景塗りつぶし
