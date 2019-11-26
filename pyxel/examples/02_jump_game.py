@@ -13,11 +13,10 @@ def update():
     if btnp(KEY_Q):quit()
     for i,(x,y,a)in enumerate(floor):# update_floor
         if a and x-16<=pX<=x+40 and y-16<=pY<=y+8 and 0<pVY:a,score,pVY,_=0,score+10,-12,play(3, 3)
-        y+=not a and 6
-        x-=4
+        x,y=x-4,y+(a==0)*6
         if x<-40:x,y,a=x+240,RDI(8,104),1
         floor[i]=x,y,a
-    for i, (x,y,k,a) in enumerate(fruit):
+    for i,(x,y,k,a) in enumerate(fruit):
         if a and abs(x-pX)<12 and abs(y-pY)<12:a,score,pVY,_=0,score+(k+1)*100,min(pVY,-8),play(3,4)
         x-=2
         if x<-40:x,y,k,a=x+240,RDI(0,104),RDI(0,2),1
@@ -26,9 +25,9 @@ def update():
     if btn(KEY_RIGHT)or btn(GAMEPAD_1_RIGHT):pX=min(pX+2,pyxel.width-16)
     pY+=pVY
     pVY=min(pVY+1,8)
-    if pY > pyxel.height:
+    if pY>pyxel.height:
         if p_alive:(p_alive,_)=(0,play(3, 5))# play sound could be merged !
-        if pY > 600: score,pX,pY,pVY,p_alive=0,72,-16,0,1
+        if pY>600:score,pX,pY,pVY,p_alive=0,72,-16,0,1
 def draw():
     fcount=pyxel.frame_count
     cls(12)# background color
@@ -42,4 +41,4 @@ def draw():
     blt(pX,pY,0,16*(0<pVY),0,16, 16, 12)# draw player
     s="SCORE {:>4}".format(score)# score
     _,__=text(5,4,s,1),text(4,4,s,7)# score draw
-run(update, draw)
+run(update,draw)
