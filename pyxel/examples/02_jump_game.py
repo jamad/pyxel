@@ -1,108 +1,100 @@
-from random import randint
+from random import randint as RDI
 from pyxel import init,load,playm,run,btnp,KEY_Q,btn,KEY_LEFT,GAMEPAD_1_LEFT,KEY_RIGHT,GAMEPAD_1_RIGHT,play,cls,blt,text
 import pyxel
 
+W=160
+H=120
 class App:
     def __init__(self):
-        init(160, 120, caption="Pyxel Jump",scale=2)
+        init(W, H, caption="Pyxel Jump",scale=2)
         load("assets/jump_game.pyxres")
 
-        self.score = 0
-        self.player_x = 72
-        self.player_y = -16
-        self.player_vy = 0
-        self.player_is_alive = True
-
+        self.score = self.pVY = 0
+        self.pX=72
+        self.pY=-16
+        self.p_alive = 1
         self.far_cloud = [(-10, 75), (40, 65), (90, 60)]
-        self.near_cloud = [(10, 25), (70, 35), (120, 15)]
-        self.floor = [(i * 60, randint(8, 104), True) for i in range(4)]
-        self.fruit = [(i * 60, randint(0, 104), randint(0, 2), True) for i in range(4)]
+        self.near_cloud = [(10, 25), (70, 35), (H, 15)]
+        self.floor = [(i * 60, RDI(8, 104), 1) for i in range(4)]
+        self.fruit = [(i * 60, RDI(0, 104), RDI(0, 2), 1) for i in range(4)]
 
-        playm(0, loop=True)
+        playm(0, loop=1)
 
         run(self.update, self.draw)
 
     def update(self):
         if btnp(KEY_Q):quit()
-        self.update_player()
         for i, v in enumerate(self.floor):self.floor[i] = self.update_floor(*v)
         for i, v in enumerate(self.fruit):self.fruit[i] = self.update_fruit(*v)
 
-    def update_player(self):
-        if btn(KEY_LEFT) or btn(GAMEPAD_1_LEFT):self.player_x = max(self.player_x - 2, 0)
-        if btn(KEY_RIGHT) or btn(GAMEPAD_1_RIGHT):self.player_x = min(self.player_x + 2, pyxel.width - 16)
-        self.player_y += self.player_vy
-        self.player_vy = min(self.player_vy + 1, 8)
+        if btn(KEY_LEFT) or btn(GAMEPAD_1_LEFT):self.pX = max(self.pX - 2, 0)
+        if btn(KEY_RIGHT) or btn(GAMEPAD_1_RIGHT):self.pX = min(self.pX + 2, pyxel.width - 16)
+        self.pY += self.pVY
+        self.pVY = min(self.pVY + 1, 8)
 
-        if self.player_y > pyxel.height:
-            if self.player_is_alive:
-                self.player_is_alive = False
+        if self.pY > pyxel.height:
+            if self.p_alive:
+                self.p_alive = 0
                 play(3, 5)
 
-            if self.player_y > 600:
+            if self.pY > 600:
                 self.score = 0
-                self.player_x = 72
-                self.player_y = -16
-                self.player_vy = 0
-                self.player_is_alive = True
+                self.pX = 72
+                self.pY = -16
+                self.pVY = 0
+                self.p_alive = 1
 
-    def update_floor(self, x, y, is_active):
-        if is_active:
+    def update_floor(self, x, y, a):
+        if a:
             if (
-                self.player_x + 16 >= x
-                and self.player_x <= x + 40
-                and self.player_y + 16 >= y
-                and self.player_y <= y + 8
-                and self.player_vy > 0
+                self.pX + 16 >= x
+                and self.pX <= x + 40
+                and self.pY + 16 >= y
+                and self.pY <= y + 8
+                and self.pVY > 0
             ):
-                is_active = False
+                a = 0
                 self.score += 10
-                self.player_vy = -12
+                self.pVY = -12
                 play(3, 3)
-        else:y += 6
+        else:y+=6
+        x-=4
+        if x<-40: x,y,a=x+240,RDI(8,104),1
+        return x, y, a
 
-        x -= 4
-
-        if x < -40:
-            x += 240
-            y = randint(8, 104)
-            is_active = True
-        return x, y, is_active
-
-    def update_fruit(self, x, y, kind, is_active):
-        if is_active and abs(x - self.player_x) < 12 and abs(y - self.player_y) < 12:
-            is_active = False
-            self.score += (kind + 1) * 100
-            self.player_vy = min(self.player_vy, -8)
+    def update_fruit(self, x, y, k, a):
+        if a and abs(x - self.pX) < 12 and abs(y - self.pY) < 12:
+            a = 0
+            self.score += (k + 1) * 100
+            self.pVY = min(self.pVY, -8)
             play(3, 4)
         x -= 2
         if x < -40:
             x += 240
-            y = randint(0, 104)
-            kind = randint(0, 2)
-            is_active = True
-
-        return (x, y, kind, is_active)
+            y = RDI(0, 104)
+            k = RDI(0, 2)
+            a = 1
+        return (x, y, k, a)
 
     def draw(self):
         fcount=pyxel.frame_count
-        cls(12)
-        blt(0, 88, 0, 0, 88, 160, 32)# sky
-        blt(0, 88, 0, 0, 64, 160, 24, 12)# draw mountain
-        for i in range(2): blt(i * 160 - fcount % 160, 104, 0, 0, 48, 160, 16, 12)# draw forest
+        cls(12)# background color
+        blt(0, 88, 0, 0, 88, W, 32)# sky
+        blt(0, 88, 0, 0, 64, W, 24, 12)# draw mountain
+        for i in range(2): blt(i*W-fcount%W, 104, 0, 0, 48, W, 16, 12)# draw forest
 
         for i in range(2):
-            for x, y in self.far_cloud:blt(x + i * 160 - (fcount // 16) % 160, y, 0, 64, 32, 32, 8, 12)# draw clouds
+            for x, y in self.far_cloud:blt(x+i*W-(fcount // 16) % W, y, 0, 64, 32, 32, 8, 12)# draw clouds
 
         for i in range(2):
-            for x, y in self.near_cloud:blt(x + i * 160 - (fcount // 8) % 160, y, 0, 0, 32, 56, 8, 12)
+            for x, y in self.near_cloud:blt(x+i*W-(fcount // 8) % W, y, 0, 0, 32, 56, 8, 12)
 
-        for x, y, is_active in self.floor:blt(x, y, 0, 0, 16, 40, 8, 12)# draw floors
+        for x, y, a in self.floor:blt(x,y,0, 0, 16, 40, 8, 12)# draw floors
         
-        for x, y, kind, is_active in self.fruit:# draw fruits
-            if is_active:blt(x, y, 0, 32 + kind * 16, 0, 16, 16, 12)
+        for x, y, k, a in self.fruit:
+            if a:blt(x, y, 0, 32 + k*16, 0, 16, 16, 12)# draw fruits
         
-        blt(self.player_x, self.player_y, 0,  16*(0<self.player_vy),      0,16, 16, 12, )# draw player
+        blt(self.pX, self.pY, 0,  16*(0<self.pVY),      0,16, 16, 12, )# draw player
 
         s = "SCORE {:>4}".format(self.score)# draw score
         text(5, 4, s, 1)
