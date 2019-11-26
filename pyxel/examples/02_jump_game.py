@@ -1,13 +1,11 @@
 from random import randint
-
+from pyxel import init,load,playm,run,btnp,KEY_Q,btn,KEY_LEFT,GAMEPAD_1_LEFT,KEY_RIGHT,GAMEPAD_1_RIGHT,play,cls,blt,text
 import pyxel
-
 
 class App:
     def __init__(self):
-        pyxel.init(160, 120, caption="Pyxel Jump")
-
-        pyxel.load("assets/jump_game.pyxres")
+        init(160, 120, caption="Pyxel Jump",scale=2)
+        load("assets/jump_game.pyxres")
 
         self.score = 0
         self.player_x = 72
@@ -20,36 +18,26 @@ class App:
         self.floor = [(i * 60, randint(8, 104), True) for i in range(4)]
         self.fruit = [(i * 60, randint(0, 104), randint(0, 2), True) for i in range(4)]
 
-        pyxel.playm(0, loop=True)
+        playm(0, loop=True)
 
-        pyxel.run(self.update, self.draw)
+        run(self.update, self.draw)
 
     def update(self):
-        if pyxel.btnp(pyxel.KEY_Q):
-            pyxel.quit()
-
+        if btnp(KEY_Q):quit()
         self.update_player()
-
-        for i, v in enumerate(self.floor):
-            self.floor[i] = self.update_floor(*v)
-
-        for i, v in enumerate(self.fruit):
-            self.fruit[i] = self.update_fruit(*v)
+        for i, v in enumerate(self.floor):self.floor[i] = self.update_floor(*v)
+        for i, v in enumerate(self.fruit):self.fruit[i] = self.update_fruit(*v)
 
     def update_player(self):
-        if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.GAMEPAD_1_LEFT):
-            self.player_x = max(self.player_x - 2, 0)
-
-        if pyxel.btn(pyxel.KEY_RIGHT) or pyxel.btn(pyxel.GAMEPAD_1_RIGHT):
-            self.player_x = min(self.player_x + 2, pyxel.width - 16)
-
+        if btn(KEY_LEFT) or btn(GAMEPAD_1_LEFT):self.player_x = max(self.player_x - 2, 0)
+        if btn(KEY_RIGHT) or btn(GAMEPAD_1_RIGHT):self.player_x = min(self.player_x + 2, pyxel.width - 16)
         self.player_y += self.player_vy
         self.player_vy = min(self.player_vy + 1, 8)
 
         if self.player_y > pyxel.height:
             if self.player_is_alive:
                 self.player_is_alive = False
-                pyxel.play(3, 5)
+                play(3, 5)
 
             if self.player_y > 600:
                 self.score = 0
@@ -70,9 +58,8 @@ class App:
                 is_active = False
                 self.score += 10
                 self.player_vy = -12
-                pyxel.play(3, 3)
-        else:
-            y += 6
+                play(3, 3)
+        else:y += 6
 
         x -= 4
 
@@ -80,7 +67,6 @@ class App:
             x += 240
             y = randint(8, 104)
             is_active = True
-
         return x, y, is_active
 
     def update_fruit(self, x, y, kind, is_active):
@@ -88,10 +74,8 @@ class App:
             is_active = False
             self.score += (kind + 1) * 100
             self.player_vy = min(self.player_vy, -8)
-            pyxel.play(3, 4)
-
+            play(3, 4)
         x -= 2
-
         if x < -40:
             x += 240
             y = randint(0, 104)
@@ -101,55 +85,26 @@ class App:
         return (x, y, kind, is_active)
 
     def draw(self):
-        pyxel.cls(12)
+        fcount=pyxel.frame_count
+        cls(12)
+        blt(0, 88, 0, 0, 88, 160, 32)# sky
+        blt(0, 88, 0, 0, 64, 160, 24, 12)# draw mountain
+        for i in range(2): blt(i * 160 - fcount % 160, 104, 0, 0, 48, 160, 16, 12)# draw forest
 
-        # draw sky
-        pyxel.blt(0, 88, 0, 0, 88, 160, 32)
-
-        # draw mountain
-        pyxel.blt(0, 88, 0, 0, 64, 160, 24, 12)
-
-        # draw forest
-        offset = pyxel.frame_count % 160
         for i in range(2):
-            pyxel.blt(i * 160 - offset, 104, 0, 0, 48, 160, 16, 12)
+            for x, y in self.far_cloud:blt(x + i * 160 - (fcount // 16) % 160, y, 0, 64, 32, 32, 8, 12)# draw clouds
 
-        # draw clouds
-        offset = (pyxel.frame_count // 16) % 160
         for i in range(2):
-            for x, y in self.far_cloud:
-                pyxel.blt(x + i * 160 - offset, y, 0, 64, 32, 32, 8, 12)
+            for x, y in self.near_cloud:blt(x + i * 160 - (fcount // 8) % 160, y, 0, 0, 32, 56, 8, 12)
 
-        offset = (pyxel.frame_count // 8) % 160
-        for i in range(2):
-            for x, y in self.near_cloud:
-                pyxel.blt(x + i * 160 - offset, y, 0, 0, 32, 56, 8, 12)
+        for x, y, is_active in self.floor:blt(x, y, 0, 0, 16, 40, 8, 12)# draw floors
+        
+        for x, y, kind, is_active in self.fruit:# draw fruits
+            if is_active:blt(x, y, 0, 32 + kind * 16, 0, 16, 16, 12)
+        
+        blt(self.player_x, self.player_y, 0,  16*(0<self.player_vy),      0,16, 16, 12, )# draw player
 
-        # draw floors
-        for x, y, is_active in self.floor:
-            pyxel.blt(x, y, 0, 0, 16, 40, 8, 12)
-
-        # draw fruits
-        for x, y, kind, is_active in self.fruit:
-            if is_active:
-                pyxel.blt(x, y, 0, 32 + kind * 16, 0, 16, 16, 12)
-
-        # draw player
-        pyxel.blt(
-            self.player_x,
-            self.player_y,
-            0,
-            16 if self.player_vy > 0 else 0,
-            0,
-            16,
-            16,
-            12,
-        )
-
-        # draw score
-        s = "SCORE {:>4}".format(self.score)
-        pyxel.text(5, 4, s, 1)
-        pyxel.text(4, 4, s, 7)
-
-
+        s = "SCORE {:>4}".format(self.score)# draw score
+        text(5, 4, s, 1)
+        text(4, 4, s, 7)
 App()
