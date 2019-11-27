@@ -7,20 +7,16 @@ pX,pY,p_alive=72,-16,1
 cl_far,cl_near=[(-10, 75),(40, 65),(90, 60)],[(10, 25),(70, 35),(H, 15)]
 floor=[(i*60,RDI(8,104), 1) for i in range(4)]
 fruit=[(i*60,RDI(0,104), RDI(0,2),1) for i in range(4)]
-_,__,___=init(W,H,caption="Pyxel Jump",scale=2),load("assets/jump_game.pyxres"),playm(0,loop=1)
+_,__,___=init(W,H,caption="Pyxel Jump",scale=1),load("assets/jump_game.pyxres"),playm(0,loop=1)
 def update():
     global pX,pY,pVY,p_alive,score
     if btnp(KEY_Q):quit()
     for i,(x,y,a)in enumerate(floor):# update_floor
         if a and x-16<=pX<=x+40 and y-16<=pY<=y+8 and 0<pVY:a,score,pVY,_=0,score+10,-12,play(3, 3)
-        x,y=x-4,y+(a==0)*6
-        if x<-40:x,y,a=x+240,RDI(8,104),1
-        floor[i]=x,y,a
+        floor[i]=(x-4+240,RDI(8,104),1)if x-4<-40 else(x-4,y+(a==0)*6,a)
     for i,(x,y,k,a) in enumerate(fruit):
         if a and abs(x-pX)<12 and abs(y-pY)<12:a,score,pVY,_=0,score+(k+1)*100,min(pVY,-8),play(3,4)
-        x-=2
-        if x<-40:x,y,k,a=x+240,RDI(0,104),RDI(0,2),1
-        fruit[i]=x,y,k,a
+        fruit[i]=(x-2+240,RDI(0,104),RDI(0,2),1)if x-2<-40 else(x-2,y,k,a)
     if btn(KEY_LEFT)or btn(GAMEPAD_1_LEFT):pX=max(pX-2,0)
     if btn(KEY_RIGHT)or btn(GAMEPAD_1_RIGHT):pX=min(pX+2,pyxel.width-16)
     pY+=pVY
