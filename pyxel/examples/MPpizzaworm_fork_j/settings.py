@@ -1,4 +1,4 @@
-""" General global settings for configuring the game """
+# General global settings for configuring the game
 
 PIZZA_NUM = 10
 PIZZA_RADIUS_RANGE = (10, 50)

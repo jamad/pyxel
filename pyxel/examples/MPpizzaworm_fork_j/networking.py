@@ -1,4 +1,5 @@
-""" All network related thingies """
+# All network related thingies """
+
 import socket
 from abc import ABC, abstractmethod
 import threading
@@ -494,7 +495,6 @@ class ClientConnection:
         """ Shutdown client connection """
         self.alive = False
         self.client_socket.close()
-
 
 class TCPServer:
     """ Contains socket connections to clients, handles new connections """

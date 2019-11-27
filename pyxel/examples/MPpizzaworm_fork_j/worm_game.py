@@ -1,14 +1,13 @@
 #""" Multiplayer Pizza Snake / Worm Game """
-#from typing import List
+#from typing import List --- 何のため？ - maybe reference for it https://qiita.com/icoxfog417/items/c17eb042f4735b7924a3
 import pygame
 
-from game_inputs import InputHandler, InputState
-from graphics import GameRenderer
-#import settings
-from game_state import Snake, GameState
-import networking
-from players import Player, Human, SimpleAI
-
+import settings # under 30 lines
+from game_inputs import InputHandler, InputState # about 70 lines
+from players import Player, Human, SimpleAI # about 80 lines
+from graphics import GameRenderer # about 170 lines
+from game_state import Snake, GameState # about 300 lines
+import networking # about 620 lines
 
 class Game:
     def __init__(self):

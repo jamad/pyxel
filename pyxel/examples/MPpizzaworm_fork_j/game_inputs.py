@@ -1,4 +1,4 @@
-""" Input mapping from pygame events to game actions """
+# """ Input mapping from pygame events to game actions """
 from enum import IntEnum, unique, auto
 from typing import List, Tuple, Any
 import pygame
@@ -10,32 +10,26 @@ class Action(IntEnum):
     TURN_LEFT = 0
     TURN_RIGHT = auto()
 
-
 class InputState:
     """ Game action state """
     @staticmethod
-    def clear_tick_states() -> None:
-        """ Clear the per tick 'pressed' and 'released'
-            states of all existing input states """
+    def clear_tick_states():#    """ Clear the per tick 'pressed' and 'released'  states of all existing input states """
         for state in ALL_INPUT_STATES:
             state.clear_tick_actions()
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.button_state = [False] * len(Action)
         self.button_pressed = [False] * len(Action)
         self.button_released = [False] * len(Action)
         ALL_INPUT_STATES.append(self)
 
-    def __del__(self) -> None:
+    def __del__(self):
         ALL_INPUT_STATES.remove(self)
 
-    def handle_action(self, action: Action, down: bool) -> None:
-        """ Update input state based on action """
+    def handle_action(self, action, down):# """ Update input state based on action """
         self.button_state[action] = down
-        if down:
-            self.button_pressed[action] = True
-        else:
-            self.button_released[action] = True
+        if down: self.button_pressed[action] = True
+        else: self.button_released[action] = True
 
     def clear_tick_actions(self) -> None:
         """ Clear states for pressed this tick and released this tick """
