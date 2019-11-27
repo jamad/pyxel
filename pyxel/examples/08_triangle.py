@@ -1,18 +1,10 @@
-import pyxel
-
-
+from pyxel import init,run, cls, tri
 class App:
     def __init__(self):
-        pyxel.init(200, 110)
-        pyxel.run(self.update, self.draw)
-
-    def update(self):
-        pass
-
+        init(200, 110,scale=1)
+        run(self.update, self.draw)
+    def update(self):pass
     def draw(self):
-        pyxel.cls(5)
-
-        pyxel.tri(100, 0, 0, 100, 199, 100, 8)
-
-
+        cls(5)
+        tri(100, 0, 0, 100, 199, 100, 8)
 App()
