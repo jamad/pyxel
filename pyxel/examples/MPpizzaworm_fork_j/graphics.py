@@ -67,6 +67,9 @@ class SnakeGraphics:
     """ Implements Snake drawing with 8-bit texture
         and palette color rotations """
     def __init__(self):
+        self.screen = pygame.display.set_mode(settings.PLAY_AREA)
+        self.myfont = pygame.font.Font(None, 50)
+
         def hsl_color_pair(seed,player_index) :
             """ Generate a hsl color with unique hue for each player """
             def hsl_color(hue, saturation,lightness) -> Color:
@@ -116,13 +119,12 @@ class SnakeGraphics:
             size = settings.PLAYER_COLOR_GRADIENT_SIZE
             return 1 + pidx * size + value % size
 
-        for part in snake.new_parts:
-            index = player_color_index(player_idx, part[2])
-            pygame.draw.circle(self.image, index, [part[0], part[1]], settings.SNAKE_RADIUS)
-        snake.new_parts.clear()
+        POS=snake.new_parts[0]
 
-        for part in snake.removed_parts:
-            pygame.draw.circle(self.image, 0, [part[0], part[1]], settings.SNAKE_RADIUS)
+        for part in snake.new_parts: pygame.draw.circle(self.image, player_color_index(player_idx, part[2]), [part[0], part[1]], settings.SNAKE_RADIUS)
+        snake.new_parts.clear()
+        
+        for part in snake.removed_parts: pygame.draw.circle(self.image, 0, [part[0], part[1]], settings.SNAKE_RADIUS)
         snake.removed_parts.clear()
 
         # Replace last part as it was partially removed,
@@ -131,6 +133,9 @@ class SnakeGraphics:
             part = snake.parts[0]
             corr_col_index = player_color_index(player_idx, part[2])
             pygame.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
+
+        ######### https://stackoverflow.com/questions/20842801/how-to-display-text-in-pygame
+        self.screen.blit(self.myfont.render(str(player_idx), True, (255, 0, 0)),(POS[0]-15,POS[1]-15))
 
     def draw_snakes(self, screen, snakes):
         """ Draw all provided snake objects and rotate palette """
