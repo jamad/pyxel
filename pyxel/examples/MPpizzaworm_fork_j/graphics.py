@@ -1,12 +1,12 @@
 """ Manages drawing of the game """
-from typing import List, Tuple, Any
+#from typing import List, Tuple, Any
 import colorsys
 import random
 import pygame
 import settings
 from game_state import GameState, Snake, Pizza
 
-Color = Tuple[int, int, int]
+#Color = Tuple[int, int, int]
 
 class Colors:
     """ Basic colors """
@@ -39,9 +39,9 @@ PLAYER_COLORS = [(Colors.P1_GREEN, Colors.P1_YELLOW),
                  (Colors.ROYAL, Colors.GOLD), (Colors.FUCHSIA, Colors.MINT)]
 
 
-def generate_gradient(colors: Tuple[Color, Color], steps: int) -> List[Color]:
+def generate_gradient(colors, steps):
     """ Generate a color gradient with 2*steps for two input colors """
-    def lerp(val1: int, val2: int, scale: float) -> int:
+    def lerp(val1, val2, scale) -> int:
         """ interpolate between values val1 and val2 with scale [0, 1] """
         return int(val1 + (val2 - val1) * scale)
 
@@ -63,26 +63,20 @@ def generate_gradient(colors: Tuple[Color, Color], steps: int) -> List[Color]:
         palette.append((red, green, blue))
     return palette
 
-
 class SnakeGraphics:
     """ Implements Snake drawing with 8-bit texture
         and palette color rotations """
-    def __init__(self) -> None:
-        def hsl_color_pair(seed: float,
-                           player_index: int) -> Tuple[Color, Color]:
+    def __init__(self):
+        def hsl_color_pair(seed,player_index) :
             """ Generate a hsl color with unique hue for each player """
-            def hsl_color(hue: float, saturation: float,
-                          lightness: float) -> Color:
+            def hsl_color(hue, saturation,lightness) -> Color:
                 """ Convert hsl to rgb """
                 hue = hue - 1 if hue > 1 else hue
-                red, green, blue = (
-                    int(256 * i)
-                    for i in colorsys.hls_to_rgb(hue, lightness, saturation))
+                red, green, blue=(int(256 * i)for i in colorsys.hls_to_rgb(hue, lightness, saturation))
                 return (red, green, blue)
 
             pidx = player_index / settings.MAX_PLAYERS
-            return (hsl_color(seed + pidx, 0.99,
-                              0.5), hsl_color(seed + pidx, 0.7, 0.3))
+            return (hsl_color(seed + pidx, 0.99, 0.5), hsl_color(seed + pidx, 0.7, 0.3))
 
         self.image = pygame.Surface(settings.PLAY_AREA, 0, 8)
         self.image.fill((0, 0, 0))
@@ -97,10 +91,10 @@ class SnakeGraphics:
 
         assert len(self.gradients) == settings.MAX_PLAYERS
         self.palette = [(0, 0, 0)] * 256
-        self.rotate: float = 0.0
+        self.rotate = 0.0
         self.update_palette()
 
-    def rotate_palette(self) -> None:
+    def rotate_palette(self):
         """ Rotate the color gradients for each player to create animation """
         self.rotate += settings.SNAKE_COLOR_ROT
         rot = int(self.rotate)
@@ -110,27 +104,25 @@ class SnakeGraphics:
             for i in range(size):
                 self.palette[base + i] = self.gradients[pidx][(i + rot) % size]
 
-    def update_palette(self) -> None:
+    def update_palette(self):
         """ Animate color palette and apply it to the snake texture """
         self.rotate_palette()
         self.image.set_palette(self.palette)
 
-    def draw_snake(self, player_idx: int, snake: Snake) -> None:
+    def draw_snake(self, player_idx, snake: Snake):
         """ Apply updates to the snake texture """
-        def player_color_index(pidx: int, value: int) -> int:
+        def player_color_index(pidx, value) -> int:
             """ return player color index in the shared palette """
             size = settings.PLAYER_COLOR_GRADIENT_SIZE
             return 1 + pidx * size + value % size
 
         for part in snake.new_parts:
             index = player_color_index(player_idx, part[2])
-            pygame.draw.circle(self.image, index, [part[0], part[1]],
-                               settings.SNAKE_RADIUS)
+            pygame.draw.circle(self.image, index, [part[0], part[1]], settings.SNAKE_RADIUS)
         snake.new_parts.clear()
 
         for part in snake.removed_parts:
-            pygame.draw.circle(self.image, 0, [part[0], part[1]],
-                               settings.SNAKE_RADIUS)
+            pygame.draw.circle(self.image, 0, [part[0], part[1]], settings.SNAKE_RADIUS)
         snake.removed_parts.clear()
 
         # Replace last part as it was partially removed,
@@ -138,38 +130,32 @@ class SnakeGraphics:
         if len(snake.parts) > 0:
             part = snake.parts[0]
             corr_col_index = player_color_index(player_idx, part[2])
-            pygame.draw.circle(self.image, corr_col_index, [part[0], part[1]],
-                               settings.SNAKE_RADIUS)
+            pygame.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
 
-    def draw_snakes(self, screen: Any, snakes: List[Snake]) -> None:
+    def draw_snakes(self, screen, snakes):
         """ Draw all provided snake objects and rotate palette """
-        for snake_id, snake in enumerate(snakes):
-            self.draw_snake(snake_id, snake)
+        for snake_id, snake in enumerate(snakes): self.draw_snake(snake_id, snake)
         self.update_palette()
         screen.blit(self.image, (0, 0))
 
 
 class GameRenderer:
     """ Handles game state rendering """
-    def __init__(self) -> None:
+    def __init__(self):
         self.snake_graphics = SnakeGraphics()
         self.screen = pygame.display.set_mode(settings.PLAY_AREA)
 
-    def draw_pizza(self, pizza: Pizza) -> None:
+    def draw_pizza(self, pizza: Pizza):
         """ Draw a pizza object to the screen """
-        pygame.draw.circle(self.screen, (180, 160, 10), [pizza.x, pizza.y],
-                           pizza.radius)
-        pygame.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y],
-                           pizza.radius - 3)
-        pygame.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y],
-                           pizza.radius - 6)
+        pygame.draw.circle(self.screen, (180, 160, 10), [pizza.x, pizza.y], pizza.radius)
+        pygame.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y], pizza.radius - 3)
+        pygame.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y], pizza.radius - 6)
 
-    def draw_pizzas(self, pizzas: List[Pizza]) -> None:
+    def draw_pizzas(self, pizzas):
         """ Draw all pizzas in a list """
-        for pizza in pizzas:
-            self.draw_pizza(pizza)
+        for pizza in pizzas:self.draw_pizza(pizza)
 
-    def draw_game(self, game_state: GameState) -> None:
+    def draw_game(self, game_state: GameState):
         """ Draw game """
         self.screen.fill(Colors.CLEAR_COLOR)
         self.draw_pizzas(game_state.pizzas)

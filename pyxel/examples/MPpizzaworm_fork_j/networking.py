@@ -4,12 +4,12 @@ import socket
 from abc import ABC, abstractmethod
 import threading
 import struct
-from typing import List, Sequence, Optional, Tuple, Any, Dict
+#from typing import List, Sequence, Optional, Tuple, Any, Dict
 from enum import IntEnum, unique
 from game_state import Pizza, SnakePart
 from players import Player
 
-AddrType = Tuple[str, int]
+AddrType = (str, int)
 
 DEFAULT_PORT = 45000
 
@@ -104,7 +104,7 @@ def bytes_to_int(byte_array: bytes) -> int:
     return int.from_bytes(byte_array, byteorder='big')
 
 
-def pack_into(fmt: str, buffer: bytearray, offset: int, *args: Any) -> int:
+def pack_into(fmt: str, buffer: bytearray, offset: int, *args) -> int:
     """ Pack data with struct.pack_into and given data format.
         return the size of the output data with that format.
         Use offset += pack_into() to update the offset for next call """
@@ -120,7 +120,7 @@ class Message(ABC):
     """ Network message interface for serialization """
     header_format = '>ii'
 
-    def __init__(self, msg_type: NetMessage) -> None:
+    def __init__(self, msg_type: NetMessage):
         self.msg_type = msg_type
 
     @abstractmethod
@@ -145,7 +145,7 @@ class Message(ABC):
         return pack_into(fmt, buffer, offset, msg.encode())
 
     @staticmethod
-    def unpack_str(payload: bytes, offset: int) -> Tuple[str, int]:
+    def unpack_str(payload: bytes, offset: int):
         """ Unpack variable lenght str from message payload
             return (str, new offset) """
         str_len, = struct.unpack_from('B', payload, offset)
@@ -162,7 +162,7 @@ class PlayerRegisterMessage(Message):
     """ Register client player to the server """
     player_id_format = '>i'
 
-    def __init__(self, index: int, player: Player) -> None:
+    def __init__(self, index: int, player: Player):
         super().__init__(NetMessage.C_REGISTER_PLAYER)
         self.index = index
         self.player = player
@@ -182,7 +182,7 @@ class PlayerRegisterMessage(Message):
         return bytes(msg_bytes)
 
     @staticmethod
-    def decode(payload: bytes) -> Tuple[int, str]:
+    def decode(payload: bytes) :
         """ Return decoded [remote_id, player_name] tuple """
         remote_id, = struct.unpack_from(PlayerRegisterMessage.player_id_format,
                                         payload, 0)
@@ -194,7 +194,7 @@ class PlayerRegisteredMessage(Message):
     """ Register client player to the server """
     register_format = '>ii'
 
-    def __init__(self, snake_id: int, remote_id: int) -> None:
+    def __init__(self, snake_id: int, remote_id: int):
         super().__init__(NetMessage.S_PLAYER_REGISTERED)
         self.snake_id = snake_id
         self.remote_id = remote_id
@@ -211,7 +211,7 @@ class PlayerRegisteredMessage(Message):
 
         return bytes(msg_bytes)
 
-    def decode(self, payload: bytes) -> None:
+    def decode(self, payload: bytes):
         """ Decode snake_id and remote_id from server message """
         self.snake_id, self.remote_id = struct.unpack_from(
             self.register_format, payload, 0)
@@ -221,7 +221,7 @@ class SnakeInputMessage(Message):
     """ Client to server snake control message """
     input_format = '>ii'
 
-    def __init__(self, snake_id: int, snake_input: int) -> None:
+    def __init__(self, snake_id: int, snake_input: int):
         super().__init__(NetMessage.C_SNAKE_INPUT)
         self.snake_id = snake_id
         self.snake_input = snake_input
@@ -238,7 +238,7 @@ class SnakeInputMessage(Message):
                             self.snake_id, self.snake_input)
         return bytes(msg_bytes)
 
-    def decode(self, payload: bytes) -> None:
+    def decode(self, payload: bytes):
         """ Decode snake_id and input from message payload """
         self.snake_id, self.snake_input = struct.unpack_from(
             self.input_format, payload, 0)
@@ -253,17 +253,14 @@ class GameStateUpdateMessage(Message):
     snake_header_format = '>4i'
     snake_part_format = '>3i'
 
-    def __init__(self, added_pizzas: List[Pizza],
-                 removed_pizzas: List[int]) -> None:
+    def __init__(self, added_pizzas, removed_pizzas):
         super().__init__(NetMessage.S_GAME_UPDATE)
         self.added_pizzas = added_pizzas
         self.removed_pizzas = removed_pizzas
         self.snake_updates: List[
             Tuple[int, int, int, Sequence[SnakePart]]] = []
 
-    def buffer_snake_update(self, snake_id: int, snake_dir: int,
-                            added_parts: Sequence[SnakePart],
-                            removed_parts: int) -> None:
+    def buffer_snake_update(self, snake_id, snake_dir,added_parts,removed_parts):
         """ Buffer a single snake information internally """
         self.snake_updates.append(
             (snake_id, snake_dir, removed_parts, added_parts))
@@ -357,7 +354,7 @@ class GameStateUpdateMessage(Message):
                 (snake_id, snake_dir, rem_count, added_parts))
         return offset
 
-    def decode(self, payload: bytes) -> None:
+    def decode(self, payload: bytes):
         """ Decode the gamestate update message payload.
             Generate 'added_pizzas', 'removed_pizzas' and
             snake_updates lists. """
@@ -368,24 +365,23 @@ class GameStateUpdateMessage(Message):
 
 class RemotePlayer(Player):
     """ Player whose inputs come over network """
-    def __init__(self, remote_id: int, name: str) -> None:
+    def __init__(self, remote_id: int, name: str):
         super().__init__(name)
         self.remote_id = remote_id
         self.__last_snake_input = 0
         self.player_lock = threading.Lock()
 
-    def set_remote_input(self, remote_input: int) -> None:
+    def set_remote_input(self, remote_input: int):
         """ Safely store snake control input for this player """
         with self.player_lock:
             self.__last_snake_input = remote_input
 
-    def act(self) -> None:
+    def act(self):
         """ Copy remote input to interface """
         with self.player_lock:
             self.snake_input = self.__last_snake_input
 
-    def send_update(self, snake_id: int, added_parts: List[SnakePart],
-                    num_removed_parts: int) -> None:
+    def send_update(self, snake_id, added_parts,num_removed_parts):
         del snake_id  # unused interface
         del added_parts  # unused interface
         del num_removed_parts  # unused interface
@@ -393,7 +389,7 @@ class RemotePlayer(Player):
 
 class ClientConnection:
     """ Socket encapsulation for sending message to clients """
-    def __init__(self, client_socket: socket.socket, addr: AddrType) -> None:
+    def __init__(self, client_socket: socket.socket, addr: AddrType):
         print("Got connection from ", addr)
         self.alive = True
         self.client_socket = client_socket
@@ -410,20 +406,20 @@ class ClientConnection:
                                             args=())
         listerner_thread.start()
 
-    def register_new_player(self, player: RemotePlayer) -> None:
+    def register_new_player(self, player: RemotePlayer):
         """ Add player to temporary list of new players to be
             joining the game """
         with self.player_lock:
             self.__new_players.append(player)
 
-    def get_new_players(self) -> List[RemotePlayer]:
+    def get_new_players(self):
         """ Get a list of players that have not been mapped to game yet """
         with self.player_lock:
             players = list(self.__new_players)
             self.__new_players.clear()
             return players
 
-    def add_registered_players(self, new_players: List[RemotePlayer]) -> None:
+    def add_registered_players(self, new_players):
         """ Add a new list of remote players that have been
             mapped to a snake """
         with self.player_lock:
@@ -442,11 +438,11 @@ class ClientConnection:
                 #                                        "Game Full"))
                 #
 
-    def send_message(self, msg: Message) -> None:
+    def send_message(self, msg: Message):
         """ Send a network message to this client connection """
         self.send_bytes(msg.encode())
 
-    def send_bytes(self, msg: bytes) -> None:
+    def send_bytes(self, msg: bytes):
         """ Send encoded network message to this client connection """
         if self.alive:
             try:
@@ -455,7 +451,7 @@ class ClientConnection:
             except socket.error:
                 self.shutdown()
 
-    def listen_messages(self) -> None:
+    def listen_messages(self):
         """ Message listening loop for one client connection """
         try:
             while True:
@@ -463,42 +459,42 @@ class ClientConnection:
         except socket.error:
             self.shutdown()
 
-    def parse_register_player(self, payload: bytes) -> None:
+    def parse_register_player(self, payload: bytes):
         """ Reguest for a new player from client """
         remote_id, name = PlayerRegisterMessage.decode(payload)
         self.register_new_player(RemotePlayer(remote_id, name))
 
-    def __set_input(self, snake_id: int, snake_input: int) -> None:
+    def __set_input(self, snake_id: int, snake_input: int):
         """ Safely set the input for a player """
         with self.player_lock:
             if snake_id in self.__players:
                 self.__players[snake_id].set_remote_input(snake_input)
 
-    def parse_snake_input(self, payload: bytes) -> None:
+    def parse_snake_input(self, payload: bytes):
         """ Received a snake input message from client """
         msg = SnakeInputMessage(0, 0)
         msg.decode(payload)
         self.__set_input(msg.snake_id, msg.snake_input)
 
-    def send_game_update(self, game_msg: GameStateUpdateMessage) -> None:
+    def send_game_update(self, game_msg: GameStateUpdateMessage):
         """ Send a snake update to a client """
         self.send_message(game_msg)
 
-    def receive_messages(self) -> None:
+    def receive_messages(self):
         """ Read one message from socket """
         header = self.client_socket.recv(struct.calcsize(MSG_HEADER_FORMAT))
         msg_type, msg_len = struct.unpack_from(MSG_HEADER_FORMAT, header, 0)
         payload = self.client_socket.recv(msg_len)
         self.message_callbacks[NetMessage(msg_type)](payload)
 
-    def shutdown(self) -> None:
+    def shutdown(self):
         """ Shutdown client connection """
         self.alive = False
         self.client_socket.close()
 
 class TCPServer:
     """ Contains socket connections to clients, handles new connections """
-    def __init__(self, port: int) -> None:
+    def __init__(self, port: int):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_address = ('', port)
         self.sock.bind(server_address)
@@ -509,12 +505,12 @@ class TCPServer:
         self.connection_lock = threading.Lock()
         self.listening_thread: Optional[threading.Thread] = None
 
-    def __add_connection(self, conn: ClientConnection) -> None:
+    def __add_connection(self, conn: ClientConnection):
         """ Append new connection safely to list of new connections """
         with self.connection_lock:
             self.__new_connections.append(conn)
 
-    def get_new_connections(self) -> List[ClientConnection]:
+    def get_new_connections(self):
         """ Safely return a list of new connections """
         conns: List[ClientConnection] = []
         with self.connection_lock:
@@ -522,7 +518,7 @@ class TCPServer:
             self.__new_connections.clear()
         return conns
 
-    def accept_connections(self) -> None:
+    def accept_connections(self):
         """ Server listener socket loop, accept connections """
         try:
             self.sock.listen(5)
@@ -534,19 +530,19 @@ class TCPServer:
         print("Closing server, thanks for playing!")
         self.sock.close()
 
-    def start_listening(self) -> None:
+    def start_listening(self):
         """ Start listening thread """
         self.listening_thread = threading.Thread(
             target=self.accept_connections, args=())
         self.listening_thread.start()
 
-    def broadcast(self, msg: Message) -> None:
+    def broadcast(self, msg: Message):
         """ Send a message to all connected clients"""
         msg_data = msg.encode()
         for conn in self.connections:
             conn.send_bytes(msg_data)
 
-    def shutdown(self) -> None:
+    def shutdown(self):
         """ Close sockets and terminate """
         self.sock.close()
         connections = self.get_new_connections()
@@ -576,20 +572,20 @@ class TCPClient:
         """ Send register player message to server """
         self.sock.sendall(PlayerRegisterMessage(index, player).encode())
 
-    def send_snake_input(self, local_id: int, snake_input: int) -> None:
+    def send_snake_input(self, local_id: int, snake_input: int):
         """ Send snake input for a player to the server """
         if local_id in self.player_to_snake:
             snake_id = self.player_to_snake[local_id]
             self.sock.sendall(
                 SnakeInputMessage(snake_id, snake_input).encode())
 
-    def parse_player_registered(self, payload: bytes) -> None:
+    def parse_player_registered(self, payload: bytes):
         """ Receive information from server about which snake
             is yours to control """
         snake_id, player_id = struct.unpack_from('>ii', payload, 0)
         self.player_to_snake[player_id] = snake_id
 
-    def parse_game_update(self, payload: bytes) -> None:
+    def parse_game_update(self, payload: bytes):
         """ Parse pizza update message, generate
             a new item into received_pizza_updates list """
         msg = GameStateUpdateMessage([], [])

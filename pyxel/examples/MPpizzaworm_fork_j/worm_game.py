@@ -1,28 +1,23 @@
 #""" Multiplayer Pizza Snake / Worm Game """
 #from typing import List --- 何のため？ - maybe reference for it https://qiita.com/icoxfog417/items/c17eb042f4735b7924a3
-import pygame
+import pygame as P
 
 import settings # under 30 lines
 from game_inputs import InputHandler, InputState # about 70 lines
 from players import Player, Human, SimpleAI # about 80 lines
 from graphics import GameRenderer # about 170 lines
+
 from game_state import Snake, GameState # about 300 lines
 import networking # about 620 lines
 
 class Game:
     def __init__(self):
-        (w, h) = (300, 200) # window size
-        pygame.init()
-        pygame.display.set_mode((w, h)) # set screen
-        
-        # Create the window, saving it to a variable.
-#        surface = pygame.display.set_mode((350, 250), pygame.RESIZABLE)
-#        pygame.display.set_caption("Example resizable window")
-
+        P.init()
+        # P.display.set_mode((300, 200)) # set screen size - but renderer overrode it...
         self.game_state = GameState()
-        self.done=0
+        self.ongame=1
         self.frame_num= 0
-        self.clock = pygame.time.Clock()
+        self.clock = P.time.Clock()
         self.players = []
         self.inputs = InputHandler()
         self.renderer = GameRenderer()
@@ -38,9 +33,8 @@ class Game:
             self.players.append(player)
 
     def handle_events(self):#"""Main event pump"""
-        for event in pygame.event.get():  # User did something
-            if event.type == pygame.QUIT:  # If user clicked close
-                self.done = True  # Flag that we are done so we exit this loop
+        for event in P.event.get():  # User did something
+            if event.type == P.QUIT:self.ongame = 0  #  # If user clicked closeFlag that we are done so we exit this loop
             else:self.inputs.handle_event(event)
 
     def update(self):#""" Game logic update """
@@ -68,23 +62,16 @@ class Game:
 
         new_connections = self.server.get_new_connections()
         if len(new_connections) > 0:
-            game_msg = networking.GameStateUpdateMessage(
-                self.game_state.pizzas, [])
-            for snake_id, snake in enumerate(self.game_state.snakes):
-                game_msg.buffer_snake_update(snake_id, snake.dir, snake.parts,
-                                             0)
+            game_msg = networking.GameStateUpdateMessage(self.game_state.pizzas, [])
+            for snake_id, snake in enumerate(self.game_state.snakes):game_msg.buffer_snake_update(snake_id, snake.dir, snake.parts,0)
             msg_data = game_msg.encode()
-            for conn in new_connections:
-                conn.send_bytes(msg_data)
+            for conn in new_connections: conn.send_bytes(msg_data)
 
         if len(self.server.connections) > 0:
             game_msg = networking.GameStateUpdateMessage(
                 self.game_state.pizza_manager.new_pizzas,
                 self.game_state.pizza_manager.removed_pizzas)
-            for snake_id, snake in enumerate(self.game_state.snakes):
-                game_msg.buffer_snake_update(snake_id, snake.dir,
-                                             snake.new_parts,
-                                             len(snake.removed_parts))
+            for snake_id, snake in enumerate(self.game_state.snakes):game_msg.buffer_snake_update(snake_id, snake.dir, snake.new_parts, len(snake.removed_parts))
             self.server.broadcast(game_msg)
 
         self.server.connections += new_connections
@@ -101,27 +88,27 @@ class Game:
         #                           len(snake.removed_parts))
 
     def run(self):# """ Main Program Loop """
-        while not self.done:
+        while self.ongame:
             self.handle_events()
 
             for player in self.players:player.act()
             self.update()
             self.renderer.draw_game(self.game_state)
-            pygame.display.flip()
+            P.display.flip()
             InputState.clear_tick_states()
             self.game_state.pizza_manager.clear_tick_changes()
             self.clock.tick(60)# --- Limit to 60 frames per second
-        pygame.display.quit()
+        P.display.quit()
         self.server.shutdown()
 
 GAME = Game()
-GAME.add_player(Human('P1', GAME.inputs, (pygame.K_LEFT, pygame.K_RIGHT)))
-GAME.add_player(Human('P2', GAME.inputs, (pygame.K_a, pygame.K_d)))
-# GAME.add_player(Human('P3', GAME.inputs, (pygame.K_v, pygame.K_n)))
-# GAME.add_player(Human('P4', GAME.inputs, (pygame.K_KP4, pygame.K_KP6)))
-# GAME.add_player(Human('P5', GAME.inputs, (pygame.K_i, pygame.K_p)))
-GAME.add_player(SimpleAI('Bot1'))
-# GAME.add_player(SimpleAI('Bot2'))
-# GAME.add_player(SimpleAI('Bot3'))
+GAME.add_player(Human('P1', GAME.inputs, (P.K_LEFT, P.K_RIGHT)))
+GAME.add_player(Human('P2', GAME.inputs, (P.K_a, P.K_d)))
+
+GAME.add_player(Human('P3', GAME.inputs, (P.K_v, P.K_n)))
+GAME.add_player(Human('P4', GAME.inputs, (P.K_KP4, P.K_KP6)))
+GAME.add_player(Human('P5', GAME.inputs, (P.K_i, P.K_p)))
+
+for i in range(3):GAME.add_player(SimpleAI('Bot%d'%i))
 
 GAME.run()
