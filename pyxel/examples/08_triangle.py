@@ -1,10 +1,3 @@
-from pyxel import init,run, cls, tri
-class App:
-    def __init__(self):
-        init(200, 110,scale=1)
-        run(self.update, self.draw)
-    def update(self):pass
-    def draw(self):
-        cls(5)
-        tri(100, 0, 0, 100, 199, 100, 8)
-App()
+from pyxel import init,run,cls,tri
+init(128,128,scale=1)
+run(lambda:None,lambda:[cls(5),tri(64,0,0,64,128,128,8)])
