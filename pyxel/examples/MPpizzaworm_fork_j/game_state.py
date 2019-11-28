@@ -1,19 +1,13 @@
 """ Game objects and managers handling them """
-
 from collections import deque
 import math
 import random
-#from typing import List, Tuple, Deque, Sequence
 import settings
-
-#SnakePart = Tuple[int, int, int]
-#InitStateType = Tuple[int, int, int]  # (x, y, dir)
-
 
 class Snake:
     """ Contains the state of a single snake object """
     def __init__(self, init_state):
-        self.length: int = settings.SNAKE_INITIAL_LENGTH
+        self.length = settings.SNAKE_INITIAL_LENGTH
         self.parts = deque()
         self.pos= (init_state[0], init_state[1])
         self.dir= init_state[2]  # in Degrees
@@ -22,66 +16,38 @@ class Snake:
         self.alive: bool = True
         self.calc_movement_vector()
 
-    def head(self):
-        """ return the front of the snake """
-        return self.parts[-1]
-
-    def kill(self):
-        """ Mark snake dead """
-        self.alive = False
-
-    def clear(self):
-        """ Mark all snake parts as removed, clear all parts """
+    def head(self):return self.parts[-1]#""" return the front of the snake """
+    def kill(self):self.alive = False#""" Mark snake dead """
+    def clear(self):#""" Mark all snake parts as removed, clear all parts """
         self.removed_parts += self.parts
         self.parts = deque()
         self.length = 0
-
-    def reset(self, init_state):
-        """ Reset snake to initial position and length, mark it alive """
+    def reset(self, init_state):#""" Reset snake to initial position and length, mark it alive """
         self.length = settings.SNAKE_INITIAL_LENGTH
         self.pos = (init_state[0], init_state[1])
         self.dir = init_state[2]
         self.alive = True
-
-    def grow(self, food: int):
-        """ Grow the snake with 'food' amount """
-        self.length += food
-
-    def calc_movement_vector(self):
-        """ Calculate movement vector from direction and velocity """
+    def grow(self, food):self.length += food#""" Grow the snake with 'food' amount """
+    def calc_movement_vector(self):# """ Calculate movement vector from direction and velocity """
         rad = math.radians(self.dir)
         speed = settings.SNAKE_SPEED
         return (speed * math.cos(rad), speed * math.sin(rad))
-
-    def crate_new_head(self, frame_num: int):
-        """ Create a new head part at snake position """
-        self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))
-
-    def add_part(self, part):
-        """ Add a single part to the snake head """
+    def crate_new_head(self, frame_num):self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
+    def add_part(self, part):# """ Add a single part to the snake head """
         self.parts.append(part)
         self.new_parts.append(part)
-
-    def add_parts(self, parts):
-        """ Add multiple parts to the snake head """
-        for part in parts:
-            self.add_part(part)
-
-    def remove_part(self):
-        """ Remove one part from the tail of the snake """
+    def add_parts(self, parts):# """ Add multiple parts to the snake head """
+        for part in parts:self.add_part(part)
+    def remove_part(self):# """ Remove one part from the tail of the snake """
         rem = self.parts.popleft()
         self.removed_parts.append(rem)
-
-    def remove_n_parts(self, num: int):
-        """ Remove multiple parts from the snake tail """
-        for _ in range(num):
-            self.remove_part()
-
-    def update(self, frame_num: int, turn_input: int):
+    def remove_n_parts(self, num):# """ Remove multiple parts from the snake tail """
+        for _ in range(num):self.remove_part()
+    def update(self, frame_num, turn_input):
         """ Apply inputs and update snake head and tail. Changed parts
             can be queried in new_parts and removed_parts """
         self.dir += turn_input
-        vel: Tuple[float, float] = self.calc_movement_vector()
+        vel = self.calc_movement_vector()
         self.pos = (self.pos[0] + vel[0], self.pos[1] + vel[1])
 
         self.crate_new_head(frame_num)
@@ -101,14 +67,14 @@ class Snake:
 
 class Pizza:
     """ Contain the state of one pizza object """
-    def __init__(self, x: int, y: int, radius: int, pizza_id: int):
+    def __init__(self, x, y, radius, pizza_id):
         self.x = x
         self.y = y
         self.radius = radius
         self.pizza_id = pizza_id
         self.still_good = True
 
-    def is_close(self, pos, check_radius: int):
+    def is_close(self, pos, check_radius):
         """ Hit check for the pizza and a collider at position 'pos' with
             radius 'check_radius' """
         dx = pos[0] - self.x
@@ -136,11 +102,11 @@ class CollisionManager:
             [] for i in range(self.dim[0] * self.dim[1])
         ]
 
-    def __grid_index(self, grid_x: int, grid_y: int) -> int:
+    def __grid_index(self, grid_x, grid_y) -> int:
         """ return grid index """
         return grid_x + self.dim[0] * grid_y
 
-    def __collide_cell(self, grid_idx: int,snake_head):
+    def __collide_cell(self, grid_idx,snake_head):
         """ Check snake collision inside a single collision grid cell. """
         def part_collide(part1, part2):
             """ Check snake part to snake part collision.
@@ -258,7 +224,7 @@ class GameState:#   """ A complete collections of the game state. Contains the s
 
     def remove_pizza(self, pizza: Pizza):self.pizzas.remove(pizza)
 
-    def remove_pizza_by_id(self, pizza_id: int):#""" remove a pizza by id """
+    def remove_pizza_by_id(self, pizza_id):#""" remove a pizza by id """
         for pizza in self.pizzas:
             if pizza.pizza_id == pizza_id:
                 self.pizzas.remove(pizza)
