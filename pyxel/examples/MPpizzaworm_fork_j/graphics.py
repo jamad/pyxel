@@ -68,7 +68,7 @@ class SnakeGraphics:
         and palette color rotations """
     def __init__(self):
         self.screen = pygame.display.set_mode(settings.PLAY_AREA)
-        self.myfont = pygame.font.Font(None, 50)
+        self.myfont = pygame.font.Font(None, 10)# 50 - 20% scale down
 
         def hsl_color_pair(seed,player_index) :
             """ Generate a hsl color with unique hue for each player """
@@ -135,7 +135,7 @@ class SnakeGraphics:
             pygame.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
 
         ######### https://stackoverflow.com/questions/20842801/how-to-display-text-in-pygame
-        self.screen.blit(self.myfont.render(str(player_idx), True, (255, 0, 0)),(POS[0]-15,POS[1]-15))
+        self.screen.blit(self.myfont.render(str(player_idx), True, (255, 0, 0)),(POS[0]-3,POS[1]-3)) # 15 -  20% scale down
 
     def draw_snakes(self, screen, snakes):
         """ Draw all provided snake objects and rotate palette """
@@ -153,8 +153,8 @@ class GameRenderer:
     def draw_pizza(self, pizza: Pizza):
         """ Draw a pizza object to the screen """
         pygame.draw.circle(self.screen, (180, 160, 10), [pizza.x, pizza.y], pizza.radius)
-        pygame.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y], pizza.radius - 3)
-        pygame.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y], pizza.radius - 6)
+        pygame.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y], max(1,pizza.radius - 0))# 20% scale down
+        pygame.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y], max(1,pizza.radius - 1))# 20% scale down
 
     def draw_pizzas(self, pizzas):
         """ Draw all pizzas in a list """
