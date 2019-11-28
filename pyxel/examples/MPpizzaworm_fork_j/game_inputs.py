@@ -1,7 +1,6 @@
 # """ Input mapping from pygame events to game actions """
 from enum import IntEnum, unique, auto
-#from typing import List, Tuple, Any
-import pygame
+import pyxel as P
 
 @unique
 class Action(IntEnum):#    """ All game actions that buttons can be mapped to """
@@ -36,8 +35,8 @@ class InputHandler:#""" Contains button states, handles input mappings to game a
     def add_mapping(self, input_state, key_code, action):self.button_mappings[action].append((key_code, input_state))#""" Create a input mapping from key_code to game action """
     def __init__(self):self.button_mappings=[[]for _ in Action]
     def handle_event(self, event):#""" Process input mapping for event and update Action state """        
-        if event.type != pygame.KEYDOWN and event.type != pygame.KEYUP: return
-        is_down = event.type == pygame.KEYDOWN
+        if event.type != P.KEYDOWN and event.type != P.KEYUP: return
+        is_down = event.type == P.KEYDOWN
         for action_index, mapped_keys in enumerate(self.button_mappings):
             for mapping in mapped_keys:
                 if event.key == mapping[0]:mapping[1].handle_action(Action(action_index), is_down)
