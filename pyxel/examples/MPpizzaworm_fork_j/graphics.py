@@ -5,10 +5,6 @@ from game_state import GameState, Snake, Pizza
 import pyxel as P
 
 class SnakeGraphics:# """ Implements Snake drawing with 8-bit texture and palette color rotations """
-    def __init__(self):
-        self.palette = [(0, 0, 0)] * 256
-        self.rotate = 0.0
-
     def draw_snakes(self, screen, snakes):
         for player_idx, snake in enumerate(snakes):
             def player_color_index(pidx, value):
@@ -16,18 +12,16 @@ class SnakeGraphics:# """ Implements Snake drawing with 8-bit texture and palett
                 return 1 + pidx * size + value % size
             POS=snake.new_parts[0]
             r=settings.SNAKE_RADIUS
-            ci = player_color_index
-            for part in snake.new_parts:P.circ(part[0], part[1],r, ci(player_idx, part[2])%16)# color 5 is temporarily
+            c = 11 if player_idx<1 else 8
+            for part in snake.new_parts:P.circ(part[0], part[1],r, c)# color 5 is temporarily
             snake.new_parts.clear()
-            for part in snake.removed_parts:P.circ(part[0], part[1],r,ci(player_idx, part[2])%16)# color 5 is temporarily
+            for part in snake.removed_parts:P.circ(part[0], part[1],r,c)# color 5 is temporarily
             snake.removed_parts.clear()
             if len(snake.parts) > 0:
                 part = snake.parts[0]
-                #P.draw.circle(self.image, corr_col_index, [part[0], part[1]],r)
-                P.circ(part[0], part[1],r, ci(player_idx, part[2])%16)# color 5 is temporarily
-
+                P.circ(part[0], part[1],r,c)
             P.text(POS[0],POS[1]-1,str(player_idx),0)# player id shadow
-            P.text(POS[0]-1,POS[1]-2,str(player_idx),10 if player_idx<2 else 11)# player id draw
+            P.text(POS[0]-1,POS[1]-2,str(player_idx),7 if player_idx<1 else 10)# player id draw
 
 class GameRenderer:
     def __init__(self):self.snake_graphics = SnakeGraphics()

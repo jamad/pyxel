@@ -28,7 +28,7 @@ class Game:
 
         
         self.add_player(Human('P1', self.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))#(P.K_LEFT, P.K_RIGHT)
-        self.add_player(Human('P2', self.inputs, (P.KEY_A, P.KEY_D)))
+        #self.add_player(Human('P2', self.inputs, (P.KEY_A, P.KEY_D)))
         #self.add_player(Human('P3', self.inputs, (P.KEY_V, P.KEY_N)))
         #self.add_player(Human('P4', self.inputs, (P.KEY_KP_4, P.KEY_KP_6)))
         #self.add_player(Human('P5', self.inputs, (P.KEY_I, P.KEY_P)))
