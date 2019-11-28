@@ -1,12 +1,25 @@
-""" Manages drawing of the game """
+""" Manages drawing of the game """  # >> integrated into worm_game.py
+
+
+'''
 import random
 import settings
 from game_state import GameState, Snake, Pizza
 import pyxel as P
 
-class SnakeGraphics:# """ Implements Snake drawing with 8-bit texture and palette color rotations """
-    def draw_snakes(self, screen, snakes):
-        for player_idx, snake in enumerate(snakes):
+#class SnakeGraphics:# """ Implements Snake drawing with 8-bit texture and palette color rotations """
+#    def draw_snakes(self, screen, snakes):
+
+class GameRenderer:
+#    def __init__(self):self.snake_graphics = SnakeGraphics()
+
+    def draw_game(self, game_state):
+        P.cls(1)
+        for pizza in game_state.pizzas:
+            P.circ(pizza.x, pizza.y,pizza.radius,4)# color 5 is temporarily
+            P.circ(pizza.x, pizza.y,max(1,pizza.radius - 1),10)# color 6 is temporarily
+            P.circ(pizza.x, pizza.y,max(1,pizza.radius - 2),9)# color 7 is temporarily
+        for player_idx, snake in enumerate(game_state.snakes):
             def player_color_index(pidx, value):
                 size = settings.PLAYER_COLOR_GRADIENT_SIZE
                 return 1 + pidx * size + value % size
@@ -22,14 +35,4 @@ class SnakeGraphics:# """ Implements Snake drawing with 8-bit texture and palett
                 P.circ(part[0], part[1],r,c)
             P.text(POS[0],POS[1]-1,str(player_idx),0)# player id shadow
             P.text(POS[0]-1,POS[1]-2,str(player_idx),7 if player_idx<1 else 10)# player id draw
-
-class GameRenderer:
-    def __init__(self):self.snake_graphics = SnakeGraphics()
-
-    def draw_game(self, game_state):
-        P.cls(1)
-        for pizza in game_state.pizzas:
-            P.circ(pizza.x, pizza.y,pizza.radius,4)# color 5 is temporarily
-            P.circ(pizza.x, pizza.y,max(1,pizza.radius - 1),10)# color 6 is temporarily
-            P.circ(pizza.x, pizza.y,max(1,pizza.radius - 2),9)# color 7 is temporarily
-        self.snake_graphics.draw_snakes(1, game_state.snakes)
+'''
