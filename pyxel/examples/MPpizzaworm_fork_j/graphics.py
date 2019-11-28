@@ -6,6 +6,8 @@ import pygame
 import settings
 from game_state import GameState, Snake, Pizza
 
+import pyxel as P
+
 #Color = Tuple[int, int, int]
 
 class Colors:
@@ -67,8 +69,8 @@ class SnakeGraphics:
     """ Implements Snake drawing with 8-bit texture
         and palette color rotations """
     def __init__(self):
-        self.screen = pygame.display.set_mode(settings.PLAY_AREA)
-        self.myfont = pygame.font.Font(None, 10)# 50 - 20% scale down
+#        self.screen = P.display.set_mode(settings.PLAY_AREA)
+#        self.myfont = P.font.Font(None, 10)# 50 - 20% scale down
 
         def hsl_color_pair(seed,player_index) :
             """ Generate a hsl color with unique hue for each player """
@@ -81,9 +83,9 @@ class SnakeGraphics:
             pidx = player_index / settings.MAX_PLAYERS
             return (hsl_color(seed + pidx, 0.99, 0.5), hsl_color(seed + pidx, 0.7, 0.3))
 
-        self.image = pygame.Surface(settings.PLAY_AREA, 0, 8)
-        self.image.fill((0, 0, 0))
-        self.image.set_colorkey((0, 0, 0))
+#        self.image = P.Surface(settings.PLAY_AREA, 0, 8)
+#        self.image.fill((0, 0, 0))
+#        self.image.set_colorkey((0, 0, 0))
         self.gradients = [
             generate_gradient(
                 PLAYER_COLORS[index] if index < len(PLAYER_COLORS) else
@@ -110,7 +112,7 @@ class SnakeGraphics:
     def update_palette(self):
         """ Animate color palette and apply it to the snake texture """
         self.rotate_palette()
-        self.image.set_palette(self.palette)
+#        self.image.set_palette(self.palette)
 
     def draw_snake(self, player_idx, snake: Snake):
         """ Apply updates to the snake texture """
@@ -121,10 +123,14 @@ class SnakeGraphics:
 
         POS=snake.new_parts[0]
 
-        for part in snake.new_parts: pygame.draw.circle(self.image, player_color_index(player_idx, part[2]), [part[0], part[1]], settings.SNAKE_RADIUS)
+        for part in snake.new_parts:
+            #P.draw.circle(self.image, player_color_index(player_idx, part[2]), [part[0], part[1]], settings.SNAKE_RADIUS)
+            P.circ(part[0], part[1],settings.SNAKE_RADIUS, player_color_index(player_idx, part[2])%16)# color 5 is temporarily
         snake.new_parts.clear()
         
-        for part in snake.removed_parts: pygame.draw.circle(self.image, 0, [part[0], part[1]], settings.SNAKE_RADIUS)
+        for part in snake.removed_parts: 
+            #P.draw.circle(self.image, 0, [part[0], part[1]], settings.SNAKE_RADIUS)
+            P.circ(part[0], part[1],settings.SNAKE_RADIUS,0%16)# color 5 is temporarily
         snake.removed_parts.clear()
 
         # Replace last part as it was partially removed,
@@ -132,29 +138,35 @@ class SnakeGraphics:
         if len(snake.parts) > 0:
             part = snake.parts[0]
             corr_col_index = player_color_index(player_idx, part[2])
-            pygame.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
+            #P.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
+            P.circ(part[0], part[1],settings.SNAKE_RADIUS, corr_col_index%16)# color 5 is temporarily
 
         ######### https://stackoverflow.com/questions/20842801/how-to-display-text-in-pygame
-        self.screen.blit(self.myfont.render(str(player_idx), True, (255, 0, 0)),(POS[0]-3,POS[1]-3)) # 15 -  20% scale down
+        #self.screen.blit(self.myfont.render(str(player_idx), True, (255, 0, 0)),(POS[0]-3,POS[1]-3)) # 15 -  20% scale down
+        
+        P.text(4,4,str(player_idx),7)# score draw
 
     def draw_snakes(self, screen, snakes):
         """ Draw all provided snake objects and rotate palette """
         for snake_id, snake in enumerate(snakes): self.draw_snake(snake_id, snake)
         self.update_palette()
-        screen.blit(self.image, (0, 0))
+#        screen.blit(self.image, (0, 0))
 
 
 class GameRenderer:
     """ Handles game state rendering """
     def __init__(self):
         self.snake_graphics = SnakeGraphics()
-        self.screen = pygame.display.set_mode(settings.PLAY_AREA)
+#        self.screen = P.display.set_mode(settings.PLAY_AREA)
 
     def draw_pizza(self, pizza: Pizza):
         """ Draw a pizza object to the screen """
-        pygame.draw.circle(self.screen, (180, 160, 10), [pizza.x, pizza.y], pizza.radius)
-        pygame.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y], max(1,pizza.radius - 0))# 20% scale down
-        pygame.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y], max(1,pizza.radius - 1))# 20% scale down
+        #P.draw.circle(self.screen, (180, 160, 10), [pizza.x, pizza.y], pizza.radius)
+        P.circ(pizza.x, pizza.y,pizza.radius,5)# color 5 is temporarily
+        #P.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y], max(1,pizza.radius - 0))# 20% scale down
+        P.circ(pizza.x, pizza.y,max(1,pizza.radius - 1),6)# color 6 is temporarily
+        #P.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y], max(1,pizza.radius - 1))# 20% scale down
+        P.circ(pizza.x, pizza.y,max(1,pizza.radius - 2),7)# color 7 is temporarily
 
     def draw_pizzas(self, pizzas):
         """ Draw all pizzas in a list """
@@ -162,6 +174,6 @@ class GameRenderer:
 
     def draw_game(self, game_state: GameState):
         """ Draw game """
-        self.screen.fill(Colors.CLEAR_COLOR)
+#        self.screen.fill(Colors.CLEAR_COLOR)
         self.draw_pizzas(game_state.pizzas)
-        self.snake_graphics.draw_snakes(self.screen, game_state.snakes)
+        self.snake_graphics.draw_snakes(1, game_state.snakes)

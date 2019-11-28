@@ -1,6 +1,9 @@
 #""" Multiplayer Pizza Snake / Worm Game """
 #from typing import List --- 何のため？ - maybe reference for it https://qiita.com/icoxfog417/items/c17eb042f4735b7924a3
 import pygame as P
+import pyxel as P
+from pyxel import btn,btnp,quit
+
 
 import settings # under 30 lines
 from game_inputs import InputHandler, InputState # about 70 lines
@@ -12,12 +15,12 @@ import networking # about 620 lines
 
 class Game:
     def __init__(self):
-        P.init()
+        P.init(240,160)# pygame >> pyxel
         # P.display.set_mode((300, 200)) # set screen size - but renderer overrode it...
         self.game_state = GameState()
         self.ongame=1
         self.frame_num= 0
-        self.clock = P.time.Clock()
+#        self.clock = P.time.Clock()
         self.players = []
         self.inputs = InputHandler()
         self.renderer = GameRenderer()
@@ -33,9 +36,8 @@ class Game:
             self.players.append(player)
 
     def handle_events(self):#"""Main event pump"""
-        for event in P.event.get():  # User did something
-            if event.type == P.QUIT:self.ongame = 0  #  # If user clicked closeFlag that we are done so we exit this loop
-            else:self.inputs.handle_event(event)
+        if btnp(P.KEY_Q):quit()#  # If user clicked closeFlag that we are done so we exit this loop
+#        else:self.inputs.handle_event(event)
 
     def update(self):#""" Game logic update """
         for snake, player in zip(self.game_state.snakes, self.players):
@@ -94,20 +96,21 @@ class Game:
             for player in self.players:player.act()
             self.update()
             self.renderer.draw_game(self.game_state)
-            P.display.flip()
+            #P.display.flip()
+            P.flip()
             InputState.clear_tick_states()
             self.game_state.pizza_manager.clear_tick_changes()
-            self.clock.tick(60)# --- Limit to 60 frames per second
+#            self.clock.tick(60)# --- Limit to 60 frames per second
         P.display.quit()
         self.server.shutdown()
 
 GAME = Game()
-GAME.add_player(Human('P1', GAME.inputs, (P.K_LEFT, P.K_RIGHT)))
-GAME.add_player(Human('P2', GAME.inputs, (P.K_a, P.K_d)))
+GAME.add_player(Human('P1', GAME.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))#(P.K_LEFT, P.K_RIGHT)
+GAME.add_player(Human('P2', GAME.inputs, (P.KEY_A, P.KEY_D)))
 
-GAME.add_player(Human('P3', GAME.inputs, (P.K_v, P.K_n)))
-GAME.add_player(Human('P4', GAME.inputs, (P.K_KP4, P.K_KP6)))
-GAME.add_player(Human('P5', GAME.inputs, (P.K_i, P.K_p)))
+GAME.add_player(Human('P3', GAME.inputs, (P.KEY_V, P.KEY_N)))
+GAME.add_player(Human('P4', GAME.inputs, (P.KEY_KP_4, P.KEY_KP_6)))
+GAME.add_player(Human('P5', GAME.inputs, (P.KEY_I, P.KEY_P)))
 
 for i in range(3):GAME.add_player(SimpleAI('Bot%d'%i))
 
