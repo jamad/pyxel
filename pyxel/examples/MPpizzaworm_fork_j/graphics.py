@@ -9,25 +9,25 @@ class SnakeGraphics:# """ Implements Snake drawing with 8-bit texture and palett
         self.palette = [(0, 0, 0)] * 256
         self.rotate = 0.0
 
-    def draw_snake(self, player_idx, snake):
-        def player_color_index(pidx, value):
-            size = settings.PLAYER_COLOR_GRADIENT_SIZE
-            return 1 + pidx * size + value % size
-        POS=snake.new_parts[0]
-        for part in snake.new_parts:P.circ(part[0], part[1],settings.SNAKE_RADIUS, player_color_index(player_idx, part[2])%16)# color 5 is temporarily
-        snake.new_parts.clear()
-        for part in snake.removed_parts:P.circ(part[0], part[1],settings.SNAKE_RADIUS,player_color_index(player_idx, part[2])%16)# color 5 is temporarily
-        snake.removed_parts.clear()
-        if len(snake.parts) > 0:
-            part = snake.parts[0]
-            corr_col_index = player_color_index(player_idx, part[2])
-            #P.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
-            P.circ(part[0], part[1],settings.SNAKE_RADIUS, corr_col_index%16)# color 5 is temporarily
-
-        P.text(POS[0]-1,POS[1]-2,str(player_idx),7 if player_idx<2 else 8)# player id draw
-
     def draw_snakes(self, screen, snakes):
-        for snake_id, snake in enumerate(snakes):self.draw_snake(snake_id, snake)
+        for player_idx, snake in enumerate(snakes):
+            def player_color_index(pidx, value):
+                size = settings.PLAYER_COLOR_GRADIENT_SIZE
+                return 1 + pidx * size + value % size
+            POS=snake.new_parts[0]
+            r=settings.SNAKE_RADIUS
+            ci = player_color_index
+            for part in snake.new_parts:P.circ(part[0], part[1],r, ci(player_idx, part[2])%16)# color 5 is temporarily
+            snake.new_parts.clear()
+            for part in snake.removed_parts:P.circ(part[0], part[1],r,ci(player_idx, part[2])%16)# color 5 is temporarily
+            snake.removed_parts.clear()
+            if len(snake.parts) > 0:
+                part = snake.parts[0]
+                #P.draw.circle(self.image, corr_col_index, [part[0], part[1]],r)
+                P.circ(part[0], part[1],r, ci(player_idx, part[2])%16)# color 5 is temporarily
+
+            P.text(POS[0],POS[1]-1,str(player_idx),0)# player id shadow
+            P.text(POS[0]-1,POS[1]-2,str(player_idx),10 if player_idx<2 else 11)# player id draw
 
 class GameRenderer:
     def __init__(self):self.snake_graphics = SnakeGraphics()
