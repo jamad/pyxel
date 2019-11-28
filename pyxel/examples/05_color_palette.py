@@ -2,7 +2,7 @@ from pyxel import init,run,btnp,quit,cls,DEFAULT_PALETTE,rect,text,rectb
 import pyxel
 class App:
     def __init__(self):
-        init(255, 81, caption="Pyxel Color Palette",scale=1)
+        init(255, 81, caption="Pyxel Color Palette",scale=2)
         run(self.update, self.draw)
     def update(self):
         if btnp(pyxel.KEY_Q):quit()

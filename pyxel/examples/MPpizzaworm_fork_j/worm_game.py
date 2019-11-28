@@ -4,7 +4,6 @@ import pygame as P
 import pyxel as P
 from pyxel import btn,btnp,quit
 
-
 import settings # under 30 lines
 from game_inputs import InputHandler, InputState # about 70 lines
 from players import Player, Human, SimpleAI # about 80 lines
@@ -15,7 +14,7 @@ import networking # about 620 lines
 
 class Game:
     def __init__(self):
-        P.init(240,160)# pygame >> pyxel
+        P.init(240,160,scale=2)# pygame >> pyxel
         # P.display.set_mode((300, 200)) # set screen size - but renderer overrode it...
         self.game_state = GameState()
         self.ongame=1
@@ -27,7 +26,19 @@ class Game:
         self.server = networking.TCPServer(networking.DEFAULT_PORT)
         self.server.start_listening()
 
-    def add_player(self, player: Player):#""" Add a player to the game. """
+        
+        self.add_player(Human('P1', self.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))#(P.K_LEFT, P.K_RIGHT)
+        self.add_player(Human('P2', self.inputs, (P.KEY_A, P.KEY_D)))
+        #self.add_player(Human('P3', self.inputs, (P.KEY_V, P.KEY_N)))
+        #self.add_player(Human('P4', self.inputs, (P.KEY_KP_4, P.KEY_KP_6)))
+        #self.add_player(Human('P5', self.inputs, (P.KEY_I, P.KEY_P)))
+
+        for i in range(3):self.add_player(SimpleAI('Bot%d'%i))
+
+        
+        #run(self.update, self.draw)
+
+    def add_player(self, player):#""" Add a player to the game. """
         snake_id = len(self.game_state.snakes)
         if snake_id < settings.MAX_PLAYERS:
             snake = Snake(settings.PLAYER_INIT_STATE[snake_id])
@@ -91,6 +102,7 @@ class Game:
 
     def run(self):# """ Main Program Loop """
         while self.ongame:
+            P.cls
             self.handle_events()
 
             for player in self.players:player.act()
@@ -105,13 +117,4 @@ class Game:
         self.server.shutdown()
 
 GAME = Game()
-GAME.add_player(Human('P1', GAME.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))#(P.K_LEFT, P.K_RIGHT)
-GAME.add_player(Human('P2', GAME.inputs, (P.KEY_A, P.KEY_D)))
-
-GAME.add_player(Human('P3', GAME.inputs, (P.KEY_V, P.KEY_N)))
-GAME.add_player(Human('P4', GAME.inputs, (P.KEY_KP_4, P.KEY_KP_6)))
-GAME.add_player(Human('P5', GAME.inputs, (P.KEY_I, P.KEY_P)))
-
-for i in range(3):GAME.add_player(SimpleAI('Bot%d'%i))
-
 GAME.run()
