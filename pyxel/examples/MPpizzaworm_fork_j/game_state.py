@@ -1,4 +1,5 @@
 """ Game objects and managers handling them """
+'''
 from collections import deque
 import math
 import random
@@ -7,30 +8,30 @@ import settings
 class Snake:
     """ Contains the state of a single snake object """
     def __init__(self, init_state):
-        self.length = settings.SNAKE_INITIAL_LENGTH
+        self.length = SNAKE_INITIAL_LENGTH
         self.parts = deque()
         self.pos= (init_state[0], init_state[1])
         self.dir= init_state[2]  # in Degrees
         self.new_parts = []
         self.removed_parts = []
-        self.alive: bool = True
+        self.alive: bool = 1
         self.calc_movement_vector()
 
     def head(self):return self.parts[-1]#""" return the front of the snake """
-    def kill(self):self.alive = False#""" Mark snake dead """
+    def kill(self):self.alive = 0#""" Mark snake dead """
     def clear(self):#""" Mark all snake parts as removed, clear all parts """
         self.removed_parts += self.parts
         self.parts = deque()
         self.length = 0
     def reset(self, init_state):#""" Reset snake to initial position and length, mark it alive """
-        self.length = settings.SNAKE_INITIAL_LENGTH
+        self.length = SNAKE_INITIAL_LENGTH
         self.pos = (init_state[0], init_state[1])
         self.dir = init_state[2]
-        self.alive = True
+        self.alive = 1
     def grow(self, food):self.length += food#""" Grow the snake with 'food' amount """
     def calc_movement_vector(self):# """ Calculate movement vector from direction and velocity """
         rad = math.radians(self.dir)
-        speed = settings.SNAKE_SPEED
+        speed = SNAKE_SPEED
         return (speed * math.cos(rad), speed * math.sin(rad))
     def crate_new_head(self, frame_num):self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
     def add_part(self, part):# """ Add a single part to the snake head """
@@ -59,10 +60,10 @@ class Snake:
             avoid self collisions """
         for i, part in enumerate(reversed(self.parts)):
             if part == colliding_part:
-                return True
-            if i * settings.SNAKE_SPEED > settings.SNAKE_DIAMETER:
-                return False
-        return False
+                return 1
+            if i * SNAKE_SPEED > SNAKE_DIAMETER:
+                return 0
+        return 0
 
 
 class Pizza:
@@ -72,7 +73,7 @@ class Pizza:
         self.y = y
         self.radius = radius
         self.pizza_id = pizza_id
-        self.still_good = True
+        self.still_good = 1
 
     def is_close(self, pos, check_radius):
         """ Hit check for the pizza and a collider at position 'pos' with
@@ -81,13 +82,13 @@ class Pizza:
         dy = pos[1] - self.y
         dist = check_radius + self.radius
         if dx * dx + dy * dy < dist * dist:
-            return True
-        return False
+            return 1
+        return 0
 
     def mark_eaten(self):
         """ Marks pizza as eaten.
             Pizza will be removed at next manager update. """
-        self.still_good = False
+        self.still_good = 0
 
 
 class CollisionManager:
@@ -96,8 +97,8 @@ class CollisionManager:
         Snake to snake colisions need to then check only the current and
         boundary grid cells to find all possible collisions. """
     def __init__(self):
-        self.dim = (1 + settings.PLAY_AREA[0] // settings.SNAKE_DIAMETER,
-                    1 + settings.PLAY_AREA[1] // settings.SNAKE_DIAMETER)
+        self.dim = (1 + PLAY_AREA[0] // SNAKE_DIAMETER,
+                    1 + PLAY_AREA[1] // SNAKE_DIAMETER)
         self.collision_grid: List[List[SnakePart]] = [
             [] for i in range(self.dim[0] * self.dim[1])
         ]
@@ -110,10 +111,10 @@ class CollisionManager:
         """ Check snake collision inside a single collision grid cell. """
         def part_collide(part1, part2):
             """ Check snake part to snake part collision.
-                return True on collision. """
+                return 1 on collision. """
             dx = part1[0] - part2[0]
             dy = part1[1] - part2[1]
-            return dx * dx + dy * dy < settings.SNAKE_DIAMETER_SQ
+            return dx * dx + dy * dy < SNAKE_DIAMETER_SQ
 
         return [
             part for part in self.collision_grid[grid_idx]
@@ -123,8 +124,8 @@ class CollisionManager:
     def get_colliders(self, snake_head):
         """ Return all possible snake to snake collision parts
             from current and boundary collision grid cells """
-        ix = snake_head[0] // settings.SNAKE_DIAMETER
-        iy = snake_head[1] // settings.SNAKE_DIAMETER
+        ix = snake_head[0] // SNAKE_DIAMETER
+        iy = snake_head[1] // SNAKE_DIAMETER
         collisions = []
         y_min_range = max(iy - 1, 0)
         y_max_range = min(iy + 2, self.dim[1])
@@ -134,15 +135,15 @@ class CollisionManager:
 
     def add_parts(self, new_parts):# """ Update the collision grid with several Snake parts """
         for snake_head in new_parts:
-            ix = snake_head[0] // settings.SNAKE_DIAMETER
-            iy = snake_head[1] // settings.SNAKE_DIAMETER
+            ix = snake_head[0] // SNAKE_DIAMETER
+            iy = snake_head[1] // SNAKE_DIAMETER
             index = self.__grid_index(ix, iy)
             if 0 <= index < len(self.collision_grid):  self.collision_grid[index].append(snake_head)
 
     def remove_parts(self, removed_parts):#""" Remove multiple parts from the collision grid """
         for snake_tail in removed_parts:
-            ix = snake_tail[0] // settings.SNAKE_DIAMETER
-            iy = snake_tail[1] // settings.SNAKE_DIAMETER
+            ix = snake_tail[0] // SNAKE_DIAMETER
+            iy = snake_tail[1] // SNAKE_DIAMETER
             index = self.__grid_index(ix, iy)
             if 0 <= index < len(self.collision_grid):
                 self.collision_grid[index].remove(snake_tail)
@@ -153,16 +154,16 @@ class CollisionManager:
         def check_border_collisions(snake: Snake):
             """ Check snake border collision """
             head = snake.head()
-            radius = settings.SNAKE_RADIUS
-            if not radius <= head[0] < settings.PLAY_AREA[0] - radius:return True
-            if not radius <= head[1] < settings.PLAY_AREA[1] - radius:return True
-            return False
+            radius = SNAKE_RADIUS
+            if not radius <= head[0] < PLAY_AREA[0] - radius:return 1
+            if not radius <= head[1] < PLAY_AREA[1] - radius:return 1
+            return 0
 
         def check_snake_collisions(snake: Snake):
             """ Check snake to snake collisions """
             for col in self.get_colliders(snake.head()):
-                if not snake.is_own_head(col): return True
-            return False
+                if not snake.is_own_head(col): return 1
+            return 0
 
         for snake in snakes:
             if check_border_collisions(snake):snake.kill()
@@ -176,9 +177,9 @@ class PizzaManager:# """ Pizza generator and eating logic """
         self.removed_pizzas = []
 
     def generate_pizza(self):# """ Generate a new pizza at random location """
-        radius = random.randrange(settings.PIZZA_RADIUS_RANGE[0], settings.PIZZA_RADIUS_RANGE[1] + 1)
-        x = radius + random.randrange(settings.PLAY_AREA[0] - 2 * radius)
-        y = radius + random.randrange(settings.PLAY_AREA[1] - 2 * radius)
+        radius = random.randrange(PIZZA_RADIUS_RANGE[0], PIZZA_RADIUS_RANGE[1] + 1)
+        x = radius + random.randrange(PLAY_AREA[0] - 2 * radius)
+        y = radius + random.randrange(PLAY_AREA[1] - 2 * radius)
         self.next_pizza_id += 1
         pizza = Pizza(x, y, radius, self.next_pizza_id)
         self.new_pizzas.append(pizza)
@@ -190,7 +191,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
                 self.removed_pizzas.append(pizza.pizza_id)
                 self.pizzas.remove(pizza)
 
-        while len(self.pizzas) < settings.PIZZA_NUM: self.generate_pizza()
+        while len(self.pizzas) < PIZZA_NUM: self.generate_pizza()
 
     def eat(self, snake: Snake):
         """ Check if a snake is close enough to eat some pizzas.
@@ -199,7 +200,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
             the eaten pizzas are removed at call to 'update'."""
         position = snake.head()
         for pizza in self.pizzas:
-            if pizza.is_close(position, settings.SNAKE_RADIUS):
+            if pizza.is_close(position, SNAKE_RADIUS):
                 snake.grow(pizza.radius)
                 pizza.mark_eaten()
 
@@ -225,3 +226,4 @@ class GameState:#   """ A complete collections of the game state. Contains the s
                 if pizza.pizza_id == pizza_id:
                     self.pizzas.remove(pizza)
                     break
+'''

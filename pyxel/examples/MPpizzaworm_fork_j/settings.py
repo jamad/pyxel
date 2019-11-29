@@ -1,6 +1,5 @@
 # General global settings for configuring the game
-
-
+'''
 PIZZA_RADIUS_RANGE = (2,10)#(10, 50)
 SNAKE_INITIAL_LENGTH = 4 #20
 SNAKE_SPEED = 0.8 # 4
@@ -24,3 +23,4 @@ PLAYER_INIT_STATE = [(PLAY_AREA[0] // 2, PLAY_AREA[1] - SNAKE_DIAMETER, 270),
                      (PLAY_AREA[0] - SNAKE_DIAMETER, SNAKE_DIAMETER, 135),
                      (PLAY_AREA[0] - SNAKE_DIAMETER,
                       PLAY_AREA[1] - SNAKE_DIAMETER, 225)]
+'''

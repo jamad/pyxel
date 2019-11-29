@@ -1,33 +1,22 @@
 """ Types for player interaction """
-
 from abc import ABC, abstractmethod
 import random
 import settings
 from game_inputs import Action, InputHandler, InputState
 
-class Player(ABC):
-    """ Human player """
+class Player(ABC):# """ Human player """
     def __init__(self, name: str):
         self.name = name
         self.snake_input = 0
         self.snake_id = -1
 
     @abstractmethod
-    def act(self):
-        """ Process the inputs to the controlled snake.
-            AI players can process the game state in this function. """
-    def bind_snake(self, snake_id):
-        """ Set the controlled snake_id """
-        self.snake_id = snake_id
-
-    def get_snake_input(self) -> int:
-        """ return the snake turning input """
-        return self.snake_input
+    def act(self):pass# """ Process the inputs to the controlled snake.AI players can process the game state in this function. """
+    def bind_snake(self, snake_id):self.snake_id = snake_id#""" Set the controlled snake_id """
+    def get_snake_input(self):return self.snake_input#""" return the snake turning input """
 
     @abstractmethod
-    def send_update(self, snake_id, added_parts,num_removed_parts):
-        """ Interface which remote and AI players can override to
-            upkeep game state """
+    def send_update(self, snake_id, added_parts,num_removed_parts):pass# """ Interface which remote and AI players can override to upkeep game state """
 
 class Human(Player):
     """ Human player with controls """

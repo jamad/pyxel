@@ -6,7 +6,7 @@ import threading
 import struct
 #from typing import List, Sequence, Optional, Tuple, Any, Dict
 from enum import IntEnum, unique
-from game_state import Pizza#, SnakePart
+#from game_state import Pizza#, SnakePart
 from players import Player
 
 AddrType = (str, int)
