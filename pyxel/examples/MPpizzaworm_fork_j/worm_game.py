@@ -1,19 +1,15 @@
 #""" Multiplayer Pizza Snake / Worm Game """
-#from typing import List --- 何のため？ - maybe reference for it https://qiita.com/icoxfog417/items/c17eb042f4735b7924a3
-#import pygame as P
-import pyxel as P
-from pyxel import btn,btnp,quit
-
-#import settings # under 30 lines
-from game_inputs import InputHandler, InputState # about 70 lines
-from players import Player, Human, SimpleAI # about 80 lines
-
-#from game_state import Snake, GameState # about 300 lines
-import networking # about 620 lines
-
 from collections import deque
 import math
 import random
+
+import pyxel as P
+from pyxel import btn,btnp,quit
+
+from game_inputs import InputHandler, InputState # about 70 lines
+from players import Player, Human, SimpleAI # about 80 lines
+import networking # about 620 lines
+
 
 # General global settings for configuring the game
 PIZZA_RADIUS_RANGE = (2,10)#(10, 50)
