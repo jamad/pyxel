@@ -3,15 +3,15 @@
 from typing import List
 import sys
 import pygame
-from game_inputs import InputHandler, InputState
-from networking import TCPClient, DEFAULT_PORT
-from graphics import GameRenderer
-from game_state import GameState, Snake
-from players import Player, Human
+
+from worm_game import InputHandler, InputState
+from worm_game import TCPClient, DEFAULT_PORT
+#from worm_game import GameRenderer
+from worm_game import GameState, Snake
+from worm_game import Player, Human
 
 
-class ClientApp:
-    """ Client window that connects to the server """
+class ClientApp:#  """ Client window that connects to the server """
     def __init__(self, host_addr: str, port: int = DEFAULT_PORT) -> None:
         pygame.init()
         self.game_state = GameState()
