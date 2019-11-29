@@ -241,7 +241,9 @@ class GameStateUpdateMessage(Message):
         self.removed_pizzas = removed_pizzas
         self.snake_updates= []
 
-    def buffer_snake_update(self, snake_id, snake_dir,added_parts,removed_parts): self.snake_updates.append( (snake_id, snake_dir, removed_parts, added_parts))#   """ Buffer a single snake information internally """
+    def buffer_snake_update(self, snake_id, snake_dir,added_parts,removed_parts):
+        self.snake_updates.append( (snake_id, snake_dir, removed_parts, added_parts))#   """ Buffer a single snake information internally """
+
     def message_length(self):#""" Calculate the message payload byte size (without header) """
         removed = len(self.removed_pizzas)
         added = len(self.added_pizzas)
@@ -357,8 +359,7 @@ class ClientConnection:
                 if player.snake_id != -1:self.__players[player.snake_id] = player
 
         for player in new_players:
-            if player.snake_id != -1:
-                self.send_message(PlayerRegisteredMessage(player.snake_id, player.remote_id))
+            if player.snake_id != -1:self.send_message(PlayerRegisteredMessage(player.snake_id, player.remote_id))
             else:
                 pass
                 # TODO
@@ -373,74 +374,58 @@ class ClientConnection:
                 with self.send_lock:self.client_socket.sendall(msg)
             except socket.error:self.shutdown()
 
-    def listen_messages(self):
-        """ Message listening loop for one client connection """
+    def listen_messages(self):#""" Message listening loop for one client connection """
         try:
             while 1:self.receive_messages()
-        except socket.error:
-            self.shutdown()
+        except socket.error:self.shutdown()
 
-    def parse_register_player(self, payload):
-        """ Reguest for a new player from client """
+    def parse_register_player(self, payload):#""" Reguest for a new player from client """
         remote_id, name = PlayerRegisterMessage.decode(payload)
         self.register_new_player(RemotePlayer(remote_id, name))
 
-    def __set_input(self, snake_id, snake_input):
-        """ Safely set the input for a player """
+    def __set_input(self, snake_id, snake_input):#  """ Safely set the input for a player """
         with self.player_lock:
-            if snake_id in self.__players:
-                self.__players[snake_id].set_remote_input(snake_input)
+            if snake_id in self.__players:self.__players[snake_id].set_remote_input(snake_input)
 
-    def parse_snake_input(self, payload):
-        """ Received a snake input message from client """
+    def parse_snake_input(self, payload):#   """ Received a snake input message from client """
         msg = SnakeInputMessage(0, 0)
         msg.decode(payload)
         self.__set_input(msg.snake_id, msg.snake_input)
 
-    def send_game_update(self, game_msg: GameStateUpdateMessage):
-        """ Send a snake update to a client """
-        self.send_message(game_msg)
+    def send_game_update(self, game_msg: GameStateUpdateMessage):self.send_message(game_msg)#""" Send a snake update to a client """
 
-    def receive_messages(self):
-        """ Read one message from socket """
+    def receive_messages(self):#  """ Read one message from socket """
         header = self.client_socket.recv(struct.calcsize(MSG_HEADER_FORMAT))
         msg_type, msg_len = struct.unpack_from(MSG_HEADER_FORMAT, header, 0)
         payload = self.client_socket.recv(msg_len)
         self.message_callbacks[NetMessage(msg_type)](payload)
 
-    def shutdown(self):
-        """ Shutdown client connection """
+    def shutdown(self):#   """ Shutdown client connection """
         self.alive = False
         self.client_socket.close()
 
-class TCPServer:
-    """ Contains socket connections to clients, handles new connections """
+class TCPServer:#   """ Contains socket connections to clients, handles new connections """
     def __init__(self, port):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_address = ('', port)
         self.sock.bind(server_address)
-        print("Listening at {}:{}".format(
-            socket.gethostbyname(socket.gethostname()), port))
+        print("Listening at {}:{}".format(socket.gethostbyname(socket.gethostname()), port))
         self.__new_connections: List[ClientConnection] = []
         self.connections: List[ClientConnection] = []
         self.connection_lock = threading.Lock()
         self.listening_thread: Optional[threading.Thread] = None
 
-    def __add_connection(self, conn: ClientConnection):
-        """ Append new connection safely to list of new connections """
-        with self.connection_lock:
-            self.__new_connections.append(conn)
+    def __add_connection(self, conn: ClientConnection):#""" Append new connection safely to list of new connections """
+        with self.connection_lock:self.__new_connections.append(conn)
 
-    def get_new_connections(self):
-        """ Safely return a list of new connections """
+    def get_new_connections(self):#""" Safely return a list of new connections """
         conns: List[ClientConnection] = []
         with self.connection_lock:
             conns += self.__new_connections
             self.__new_connections.clear()
         return conns
 
-    def accept_connections(self):
-        """ Server listener socket loop, accept connections """
+    def accept_connections(self):#""" Server listener socket loop, accept connections """
         try:
             self.sock.listen(5)
             while 1:
@@ -451,8 +436,7 @@ class TCPServer:
         self.sock.close()
 
     def start_listening(self):# """ Start listening thread """
-        self.listening_thread = threading.Thread(
-            target=self.accept_connections, args=())
+        self.listening_thread = threading.Thread(target=self.accept_connections, args=())
         self.listening_thread.start()
 
     def broadcast(self, msg: Message):# """ Send a message to all connected clients"""
@@ -480,8 +464,7 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
     def send_snake_input(self, local_id, snake_input):#  """ Send snake input for a player to the server """
         if local_id in self.player_to_snake:
             snake_id = self.player_to_snake[local_id]
-            self.sock.sendall(
-                SnakeInputMessage(snake_id, snake_input).encode())
+            self.sock.sendall(SnakeInputMessage(snake_id, snake_input).encode())
 
     def parse_player_registered(self, payload):#    """ Receive information from server about which snake            is yours to control """
         snake_id, player_id = struct.unpack_from('>ii', payload, 0)
@@ -587,13 +570,13 @@ class Game:
         # TODO move to networking code
         new_connections = self.server.get_new_connections()
         if len(new_connections) > 0:
-            game_msg = networking.GameStateUpdateMessage(self.game_state.pizzas, [])
+            game_msg = GameStateUpdateMessage(self.game_state.pizzas, [])
             for snake_id, snake in enumerate(self.game_state.snakes):game_msg.buffer_snake_update(snake_id, snake.dir, snake.parts,0)
             msg_data = game_msg.encode()
             for conn in new_connections: conn.send_bytes(msg_data)
 
         if len(self.server.connections) > 0:
-            game_msg = networking.GameStateUpdateMessage(
+            game_msg = GameStateUpdateMessage(
                 self.game_state.pizza_manager.new_pizzas,
                 self.game_state.pizza_manager.removed_pizzas)
             for snake_id, snake in enumerate(self.game_state.snakes):game_msg.buffer_snake_update(snake_id, snake.dir, snake.new_parts, len(snake.removed_parts))
@@ -614,10 +597,8 @@ class Game:
             P.circ(pizza.x, pizza.y,pizza.radius,4)# color 5 is temporarily
             P.circ(pizza.x, pizza.y,max(1,pizza.radius - 1),10)# color 6 is temporarily
             P.circ(pizza.x, pizza.y,max(1,pizza.radius - 2),9)# color 7 is temporarily
+
         for player_idx, snake in enumerate(game_state.snakes):
-            def player_color_index(pidx, value):
-                size = PLAYER_COLOR_GRADIENT_SIZE
-                return 1 + pidx * size + value % size
             POS=snake.new_parts[0]
             r=SNAKE_RADIUS
             c = 11 if player_idx<1 else 8
@@ -697,7 +678,7 @@ class Snake:#    """ Contains the state of a single snake object """
         self.alive: bool = 1
         self.calc_movement_vector()
 
-    def head(self):return self.parts[-1]#""" return the front of the snake """
+    def head(self):return self.parts[-1]#"""  the front of the snake """
     def kill(self):self.alive = 0#""" Mark snake dead """
     def clear(self):#""" Mark all snake parts as removed, clear all parts """
         self.removed_parts += self.parts
@@ -724,6 +705,7 @@ class Snake:#    """ Contains the state of a single snake object """
         self.removed_parts.append(rem)
     def remove_n_parts(self, num):# """ Remove multiple parts from the snake tail """
         for _ in range(num):self.remove_part()
+
     def update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts             can be queried in new_parts and removed_parts """
         self.dir += turn_input
         vel = self.calc_movement_vector()
@@ -865,5 +847,8 @@ class GameState:#   """ A complete collections of the game state. Contains the s
                 if pizza.pizza_id == pizza_id:
                     self.pizzas.remove(pizza)
                     break
-GAME = Game()
-GAME.run()
+
+
+if __name__ == '__main__':
+    GAME = Game()
+    GAME.run()
