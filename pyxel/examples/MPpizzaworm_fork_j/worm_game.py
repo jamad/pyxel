@@ -24,7 +24,7 @@ class Player(ABC):# """ Human player """
     def get_snake_input(self):return self.snake_input#""" return the snake turning input """
 
     @abstractmethod
-    def send_update(self, snake_id, added_parts,num_removed_parts):pass# """ Interface which remote and AI players can override to upkeep game state """
+    def send_update(self, snake_id, added_parts,num_RMVED):pass# """ Interface which remote and AI players can override to upkeep game state """
 
 class Human(Player):
     """ Human player with controls """
@@ -36,24 +36,24 @@ class Human(Player):
             input_mapper.add_mapping(self.input_state, keyboard_controls[1], Action.TURN_RIGHT)
 
     def act(self):#""" Process the inputs to the controlled snake.AI players can process the game state in this function. """
-        if self.input_state.button_state[Action.TURN_LEFT]:self.snake_input = -SNAKE_TURN_RATE
-        elif self.input_state.button_state[Action.TURN_RIGHT]:self.snake_input = SNAKE_TURN_RATE
+        if self.input_state.button_state[Action.TURN_LEFT]:self.snake_input = -S_TURN
+        elif self.input_state.button_state[Action.TURN_RIGHT]:self.snake_input = S_TURN
         else:self.snake_input = 0
 
-    def send_update(self, snake_id, added_parts,num_removed_parts):
+    def send_update(self, snake_id, added_parts,num_RMVED):
         del snake_id  # unused interface
         del added_parts  # unused interface
-        del num_removed_parts  # unused interface
+        del num_RMVED  # unused interface
 
 class SimpleAI(Player):# """ Simple AI to test interfaces """
     def __init__(self, name):
         self.num = 0
         super().__init__(name)
     def act(self):self.snake_input = random.randrange(-5, 6)# """ Generate input """
-    def send_update(self, snake_id, added_parts,num_removed_parts):# """ Interface which remote and AI players can override to upkeep game state """
+    def send_update(self, snake_id, added_parts,num_RMVED):# """ Interface which remote and AI players can override to upkeep game state """
         del snake_id  # unused interface
         del added_parts  # unused interface
-        del num_removed_parts  # unused interface
+        del num_RMVED  # unused interface
 
 ##############################################  ALL NETWORKING for the following part  ##########################
 AddrType = (str, int)
@@ -241,8 +241,8 @@ class GameStateUpdateMessage(Message):
         self.DELedPZ = removed_pizzas
         self.snake_updates= []
 
-    def buffer_snake_update(self, snake_id, snake_dir,added_parts,removed_parts):
-        self.snake_updates.append( (snake_id, snake_dir, removed_parts, added_parts))#   """ Buffer a single snake information internally """
+    def buffer_snake_update(self, snake_id, snake_dir,added_parts,RMVED):
+        self.snake_updates.append( (snake_id, snake_dir, RMVED, added_parts))#   """ Buffer a single snake information internally """
 
     def message_length(self):#""" Calculate the message payload byte size (without header) """
         removed = len(self.DELedPZ)
@@ -255,7 +255,7 @@ class GameStateUpdateMessage(Message):
     def encode_pizzas(self, msg_buffer, offset):# """ Encode pizzas into the message """
         offset += pack_into(self.pizza_count_format, msg_buffer, offset,    len(self.DELedPZ), len(self.added_pizzas))
         for pizza_id in self.DELedPZ:offset += pack_into(self.pizza_rem_id_format, msg_buffer, offset,pizza_id)
-        for pizza in self.added_pizzas:offset += pack_into(self.pizza_added_format, msg_buffer, offset,pizza.pizza_id, pizza.x, pizza.y, pizza.radius)
+        for pizza in self.added_pizzas:offset += pack_into(self.pizza_added_format, msg_buffer, offset,pizza.pizza_id, pizza.x, pizza.y, pizza.r)
         return offset
 
     def encode_snakes(self, msg_buffer, offset):#""" Encode snakes into the message """
@@ -283,9 +283,9 @@ class GameStateUpdateMessage(Message):
 
         pizza_format_size = struct.calcsize(self.pizza_added_format)
         for _ in range(added):
-            pizza_id, pos_x, pos_y, radius = struct.unpack_from(self.pizza_added_format, payload, offset)
+            pizza_id, pos_x, pos_y, r = struct.unpack_from(self.pizza_added_format, payload, offset)
             offset += pizza_format_size
-            self.added_pizzas.append(Pizza(pos_x, pos_y, radius, pizza_id))
+            self.added_pizzas.append(Pizza(pos_x, pos_y, r, pizza_id))
 
         return offset
 
@@ -310,7 +310,6 @@ class GameStateUpdateMessage(Message):
         offset = self.decode_pizzas(payload, offset)
         offset = self.decode_snakes(payload, offset)
 
-
 class RemotePlayer(Player):#    """ Player whose inputs come over network """
     def __init__(self, remote_id, name):
         super().__init__(name)
@@ -324,10 +323,10 @@ class RemotePlayer(Player):#    """ Player whose inputs come over network """
     def act(self):
         with self.player_lock:self.snake_input = self.__last_snake_input #""" Copy remote input to interface """
 
-    def send_update(self, snake_id, added_parts,num_removed_parts):
+    def send_update(self, snake_id, added_parts,num_RMVED):
         del snake_id  # unused interface
         del added_parts  # unused interface
-        del num_removed_parts  # unused interface
+        del num_RMVED  # unused interface
 
 class ClientConnection:
     """ Socket encapsulation for sending message to clients """
@@ -502,23 +501,16 @@ S_INI_LEN = 4 #20 - SNAKE_INITIAL_LENGTH
 S_SPD = 0.8 # 4 - SNAKE_SPEED
 S_RAD = 2 # 10 - SNAKE_RADIUS
 S_DIA = 2 * S_RAD #- SNAKE_DIAMETER
-SNAKE_TURN_RATE = 6
-PIZZA_NUM = 10
+S_TURN = 6 # SNAKE_TURN_RATE
+PZ_NUM = 10 # PIZZA_NUM
 
-PLAY_AREA = (240, 160) # 20% smaller than original
+PA = (240, 160) # 20% smaller than original - PLAY_AREA
 
 MAX_PLAYERS = 8
 SNAKE_COLOR_ROT = 0.4
 PLAYER_COLOR_GRADIENT_SIZE = 16
-PLAYER_INIT_STATE = [(PLAY_AREA[0] // 2, PLAY_AREA[1] - S_DIA, 270),
-                     (PLAY_AREA[0] // 2, S_DIA, 90),
-                     (S_DIA, PLAY_AREA[1] // 2, 0),
-                     (PLAY_AREA[0] - S_DIA, PLAY_AREA[1] // 2, 180),
-                     (S_DIA, S_DIA, 45),
-                     (S_DIA, PLAY_AREA[1] - S_DIA, 315),
-                     (PLAY_AREA[0] - S_DIA, S_DIA, 135),
-                     (PLAY_AREA[0] - S_DIA,
-                      PLAY_AREA[1] - S_DIA, 225)]
+PLAYER_INIT_STATE = [(PA[0]//2, PA[1] - S_DIA, 270),(PA[0] // 2, S_DIA, 90),(S_DIA, PA[1] // 2, 0),(PA[0] - S_DIA, PA[1] // 2, 180),
+                     (S_DIA, S_DIA, 45),(S_DIA, PA[1] - S_DIA, 315),(PA[0] - S_DIA, S_DIA, 135),(PA[0] - S_DIA,PA[1] - S_DIA, 225)]
 
 class Game:
     def __init__(self):
@@ -535,11 +527,11 @@ class Game:
         #run(self.update, self.draw)
 
     def add_player(self, player):#""" Add a player to the game. """
-        snake_id = len(self.game_state.snakes)
+        snake_id = len(self.game_state.SN)
         if snake_id < MAX_PLAYERS:
             snake = Snake(PLAYER_INIT_STATE[snake_id])
             player.bind_snake(snake_id)
-            self.game_state.snakes.append(snake)
+            self.game_state.SN+=[snake]
             self.players.append(player)
 
     def handle_events(self):#"""Main event pump"""
@@ -547,14 +539,14 @@ class Game:
 #        else:self.inputs.handle_event(event)
 
     def update(self):#""" Game logic update """
-        for snake, player in zip(self.game_state.snakes, self.players):
+        for snake, player in zip(self.game_state.SN, self.players):
             snake.update(self.frame_num, player.get_snake_input())
-            self.game_state.collisions.add_parts(snake.new_parts)
-            self.game_state.collisions.remove_parts(snake.removed_parts)
+            self.game_state.collisions.add_parts(snake.ADDED)
+            self.game_state.collisions.remove_parts(snake.RMVED)
             self.game_state.pizza_manager.eat(snake)
-        self.game_state.collisions.handle_collisions(self.game_state.snakes)
+        self.game_state.collisions.handle_collisions(self.game_state.SN)
 
-        for snake_id, snake in enumerate(self.game_state.snakes):
+        for snake_id, snake in enumerate(self.game_state.SN):
             if len(snake.parts) > 0 and not snake.alive:
                 self.game_state.collisions.remove_parts(snake.parts)
                 snake.clear()
@@ -578,7 +570,7 @@ class Game:
             game_msg = GameStateUpdateMessage(
                 self.game_state.pizza_manager.new_pizzas,
                 self.game_state.pizza_manager.removed_pizzas)
-            for snake_id, snake in enumerate(self.game_state.snakes):game_msg.buffer_snake_update(snake_id, snake.dir, snake.new_parts, len(snake.removed_parts))
+            for snake_id, snake in enumerate(self.game_state.snakes):game_msg.buffer_snake_update(snake_id, snake.dir, snake.ADDED, len(snake.RMVED))
             self.server.broadcast(game_msg)
 
         self.server.connections += new_connections
@@ -592,19 +584,19 @@ class Game:
 
     def draw_game(self, game_state):
         P.cls(1)
-        for pizza in game_state.pizzas:
-            P.circ(pizza.x, pizza.y,pizza.radius,4)# color 5 is temporarily
-            P.circ(pizza.x, pizza.y,max(1,pizza.radius - 1),10)# color 6 is temporarily
-            P.circ(pizza.x, pizza.y,max(1,pizza.radius - 2),9)# color 7 is temporarily
+        for pz in game_state.PZ:
+            P.circ(pz.x, pz.y,pz.r,4)# color 5 is temporarily
+            P.circ(pz.x, pz.y,max(1,pz.r - 1),10)# color 6 is temporarily
+            P.circ(pz.x, pz.y,max(1,pz.r - 2),9)# color 7 is temporarily
 
-        for player_idx, snake in enumerate(game_state.snakes):
-            POS=snake.new_parts[0]
+        for player_idx, snake in enumerate(game_state.SN):
+            POS=snake.ADDED[0]
             r=S_RAD
             c = 11 if player_idx<1 else 8
-            for part in snake.new_parts:P.circ(part[0], part[1],r, c)# color 5 is temporarily
-            snake.new_parts.clear()
-            for part in snake.removed_parts:P.circ(part[0], part[1],r,c)# color 5 is temporarily
-            snake.removed_parts.clear()
+            for part in snake.ADDED:P.circ(part[0], part[1],r, c)# color 5 is temporarily
+            snake.ADDED.clear()
+            for part in snake.RMVED:P.circ(part[0], part[1],r,c)# color 5 is temporarily
+            snake.RMVED.clear()
             if len(snake.parts) > 0:
                 part = snake.parts[0]
                 P.circ(part[0], part[1],r,c)
@@ -672,15 +664,15 @@ class Snake:#    """ Contains the state of a single snake object """
         self.parts = deque()
         self.pos= (init_state[0], init_state[1])
         self.dir= init_state[2]  # in Degrees
-        self.new_parts = []
-        self.removed_parts = []
+        self.ADDED = []
+        self.RMVED = []
         self.alive: bool = 1
         self.calc_movement_vector()
 
     def head(self):return self.parts[-1]#"""  the front of the snake """
     def kill(self):self.alive = 0#""" Mark snake dead """
     def clear(self):#""" Mark all snake parts as removed, clear all parts """
-        self.removed_parts += self.parts
+        self.RMVED += self.parts
         self.parts = deque()
         self.length = 0
     def reset(self, init_state):#""" Reset snake to initial position and length, mark it alive """
@@ -696,51 +688,48 @@ class Snake:#    """ Contains the state of a single snake object """
     def crate_new_head(self, frame_num):self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
     def add_part(self, part):# """ Add a single part to the snake head """
         self.parts.append(part)
-        self.new_parts.append(part)
+        self.ADDED.append(part)
     def add_parts(self, parts):# """ Add multiple parts to the snake head """
         for part in parts:self.add_part(part)
     def remove_part(self):# """ Remove one part from the tail of the snake """
         rem = self.parts.popleft()
-        self.removed_parts.append(rem)
+        self.RMVED.append(rem)
     def remove_n_parts(self, num):# """ Remove multiple parts from the snake tail """
         for _ in range(num):self.remove_part()
 
-    def update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts             can be queried in new_parts and removed_parts """
+    def update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts             can be queried in ADDED and RMVED """
         self.dir += turn_input
         vel = self.calc_movement_vector()
         self.pos = (self.pos[0] + vel[0], self.pos[1] + vel[1])
 
         self.crate_new_head(frame_num)
-        if len(self.parts) > self.length:
-            self.remove_part()
+        if len(self.parts) > self.length:self.remove_part()
 
     def is_own_head(self, colliding_part):#  """ Check if colliding part is part of snake's own head to            avoid self collisions """
         for i, part in enumerate(reversed(self.parts)):
-            if part == colliding_part:
-                return 1
-            if i * S_SPD > S_DIA:
-                return 0
+            if part == colliding_part:return 1
+            if i * S_SPD > S_DIA:return 0
         return 0
 
 class Pizza:#  """ Contain the state of one pizza object """
-    def __init__(self, x, y, radius, pizza_id):
+    def __init__(self, x, y, r, pizza_id):
         self.x = x
         self.y = y
-        self.radius = radius
+        self.r = r
         self.pizza_id = pizza_id
-        self.still_good = 1
+        self.eaten = 0
 
-    def is_close(self, pos, check_radius):# """ Hit check for the pizza and a collider at position 'pos' with            radius 'check_radius' """
+    def is_close(self, pos, check_r):# """ Hit check for the pizza and a collider at position 'pos' with            radius 'check_radius' """
         dx = pos[0] - self.x
         dy = pos[1] - self.y
-        dist = check_radius + self.radius
+        dist = check_r + self.r
         return dx**2+ dy**2 < dist**2
 
-    def mark_eaten(self):self.still_good = 0 #""" Marks pizza as eaten. Pizza will be removed at next manager update. """
+    def mark_eaten(self):self.eaten = 1 #""" Marks pizza as eaten. Pizza will be removed at next manager update. """
 
 class CollisionManager:#  """ Handles all snake collisions.        Contains a collision grid where grid size is the snake body diameter.        Snake to snake colisions need to then check only the current and        boundary grid cells to find all possible collisions. """
     def __init__(self):
-        self.dim = (1 + PLAY_AREA[0] // S_DIA,   1 + PLAY_AREA[1] // S_DIA)
+        self.dim = (1 + PA[0] // S_DIA,   1 + PA[1] // S_DIA)
         self.collision_grid= [  [] for i in range(self.dim[0] * self.dim[1])  ]
 
     def __grid_index(self, grid_x, grid_y):return grid_x + self.dim[0] * grid_y #""" return grid index """
@@ -763,15 +752,15 @@ class CollisionManager:#  """ Handles all snake collisions.        Contains a co
                 collisions += self.__collide_cell(self.__grid_index(i, j), snake_head)
         return collisions
 
-    def add_parts(self, new_parts):# """ Update the collision grid with several Snake parts """
-        for snake_head in new_parts:
+    def add_parts(self, ADDED):# """ Update the collision grid with several Snake parts """
+        for snake_head in ADDED:
             ix = snake_head[0] // S_DIA
             iy = snake_head[1] // S_DIA
             index = self.__grid_index(ix, iy)
             if 0 <= index < len(self.collision_grid):  self.collision_grid[index].append(snake_head)
 
-    def remove_parts(self, removed_parts):#""" Remove multiple parts from the collision grid """
-        for snake_tail in removed_parts:
+    def remove_parts(self, RMVED):#""" Remove multiple parts from the collision grid """
+        for snake_tail in RMVED:
             ix = snake_tail[0] // S_DIA
             iy = snake_tail[1] // S_DIA
             index = self.__grid_index(ix, iy)
@@ -781,9 +770,8 @@ class CollisionManager:#  """ Handles all snake collisions.        Contains a co
     def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions.   Mark snakes as 'killed' if collisions happen. """
         def check_border_collisions(snake):# """ Check snake border collision """
             head = snake.head()
-            radius = S_RAD
-            if not radius <= head[0] < PLAY_AREA[0] - radius:return 1
-            if not radius <= head[1] < PLAY_AREA[1] - radius:return 1
+            if not S_RAD <= head[0] < PA[0] - S_RAD:return 1
+            if not S_RAD <= head[1] < PA[1] - S_RAD:return 1
             return 0
 
         def check_snake_collisions(snake):return any(not snake.is_own_head(col) for col in self.get_colliders(snake.head()))# """ Check snake to snake collisions """
@@ -800,26 +788,26 @@ class PizzaManager:# """ Pizza generator and eating logic """
         self.DELedPZ = []
 
     def generate_pizza(self):# """ Generate a new pizza at random location """
-        radius = random.randrange(PZ_R_RANGE[0], PZ_R_RANGE[1] + 1)
-        x = radius + random.randrange(PLAY_AREA[0] - 2 * radius)
-        y = radius + random.randrange(PLAY_AREA[1] - 2 * radius)
+        r = random.randrange(PZ_R_RANGE[0], PZ_R_RANGE[1] + 1)
+        x = r + random.randrange(PA[0] - 2 * r)
+        y = r + random.randrange(PA[1] - 2 * r)
         self.next_pizza_id += 1
-        pizza = Pizza(x, y, radius, self.next_pizza_id)
+        pizza = Pizza(x, y, r, self.next_pizza_id)
         self.NewPZ.append(pizza)
         self.pizzas.append(pizza)
 
     def update_pizzas(self):# """ Remove eaten pizzas, bake new ones to replace them """
         for pizza in list(self.pizzas):
-            if not pizza.still_good:
+            if pizza.eaten:
                 self.DELedPZ.append(pizza.pizza_id)
                 self.pizzas.remove(pizza)
-        while len(self.pizzas) < PIZZA_NUM: self.generate_pizza()
+        while len(self.pizzas) < PZ_NUM: self.generate_pizza()
 
     def eat(self, snake):# """ Check if a snake is close enough to eat some pizzas.            Fill the belly of the snake with eaten pizzas and make            it grow. Multiple snakes can eat the same pizza before            the eaten pizzas are removed at call to 'update'."""
         position = snake.head()
         for pizza in self.pizzas:
             if pizza.is_close(position, S_RAD):
-                snake.grow(pizza.radius)
+                snake.grow(pizza.r)
                 pizza.mark_eaten()
 
     def clear_tick_changes(self):# """ Clear what pizzas were created or remove this frame """
@@ -829,13 +817,13 @@ class PizzaManager:# """ Pizza generator and eating logic """
 class GameState:#   """ A complete collections of the game state. Contains the state of Pizzas and Snakes """
     def __init__(self):
         self.collisions = CollisionManager()
-        self.snakes = []
-        self.pizzas = []
+        self.SN = []#self.snakes
+        self.PZ = []#self.pizzas
 
         # TODO move to server game logic
-        self.pizza_manager = PizzaManager(self.pizzas)
+        self.pizza_manager = PizzaManager(self.PZ)
 
-    def remove_pizza(self, pizza: Pizza): self.pizzas.remove(pizza)
+    def remove_pizza(self, pizza: Pizza): self.PZ.remove(pizza)
 
     def remove_pizzas(self, removed_pizzas):#""" Remove all provided pizza_ids from active pizzas """
         for pizza_id in removed_pizzas:
@@ -843,7 +831,6 @@ class GameState:#   """ A complete collections of the game state. Contains the s
                 if pizza.pizza_id == pizza_id:
                     self.pizzas.remove(pizza)
                     break
-
 
 if __name__ == '__main__':
     GAME = Game()
