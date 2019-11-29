@@ -7,7 +7,6 @@ from pyxel import btn,btnp,quit
 import settings # under 30 lines
 from game_inputs import InputHandler, InputState # about 70 lines
 from players import Player, Human, SimpleAI # about 80 lines
-#from graphics import GameRenderer # about 170 lines
 
 from game_state import Snake, GameState # about 300 lines
 import networking # about 620 lines
@@ -15,25 +14,15 @@ import networking # about 620 lines
 class Game:
     def __init__(self):
         P.init(240,160,scale=2)# pygame >> pyxel
-        # P.display.set_mode((300, 200)) # set screen size - but renderer overrode it...
         self.game_state = GameState()
         self.ongame=1
         self.frame_num= 0
-#        self.clock = P.time.Clock()
         self.players = []
         self.inputs = InputHandler()
-#        self.renderer = GameRenderer()
         self.server = networking.TCPServer(networking.DEFAULT_PORT)
         self.server.start_listening()
-
         self.add_player(Human('P1', self.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))#(P.K_LEFT, P.K_RIGHT)
-        #self.add_player(Human('P2', self.inputs, (P.KEY_A, P.KEY_D)))
-        #self.add_player(Human('P3', self.inputs, (P.KEY_V, P.KEY_N)))
-        #self.add_player(Human('P4', self.inputs, (P.KEY_KP_4, P.KEY_KP_6)))
-        #self.add_player(Human('P5', self.inputs, (P.KEY_I, P.KEY_P)))
-
         for i in range(3):self.add_player(SimpleAI('Bot%d'%i))
-
         #run(self.update, self.draw)
 
     def add_player(self, player):#""" Add a player to the game. """

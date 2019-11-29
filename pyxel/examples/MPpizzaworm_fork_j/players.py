@@ -1,11 +1,9 @@
 """ Types for player interaction """
 
-#from typing import List, Tuple
 from abc import ABC, abstractmethod
 import random
 import settings
 from game_inputs import Action, InputHandler, InputState
-#from game_state import SnakePart
 
 class Player(ABC):
     """ Human player """

@@ -132,26 +132,20 @@ class CollisionManager:
             for j in range(y_min_range, y_max_range): collisions += self.__collide_cell(self.__grid_index(i, j), snake_head)
         return collisions
 
-    def add_part(self, snake_head):# """ Update the collision grid with a new 'snake_head' """
-        ix = snake_head[0] // settings.SNAKE_DIAMETER
-        iy = snake_head[1] // settings.SNAKE_DIAMETER
-        index = self.__grid_index(ix, iy)
-        if 0 <= index < len(self.collision_grid):
-            self.collision_grid[index].append(snake_head)
-
     def add_parts(self, new_parts):# """ Update the collision grid with several Snake parts """
-        for part in new_parts:self.add_part(part)
-
-    def remove_part(self, snake_tail):# """ Remove a single snake part from the collision grid """
-        ix = snake_tail[0] // settings.SNAKE_DIAMETER
-        iy = snake_tail[1] // settings.SNAKE_DIAMETER
-        index = self.__grid_index(ix, iy)
-        if 0 <= index < len(self.collision_grid):
-            self.collision_grid[index].remove(snake_tail)
+        for snake_head in new_parts:
+            ix = snake_head[0] // settings.SNAKE_DIAMETER
+            iy = snake_head[1] // settings.SNAKE_DIAMETER
+            index = self.__grid_index(ix, iy)
+            if 0 <= index < len(self.collision_grid):  self.collision_grid[index].append(snake_head)
 
     def remove_parts(self, removed_parts):#""" Remove multiple parts from the collision grid """
-        for part in removed_parts:
-            self.remove_part(part)
+        for snake_tail in removed_parts:
+            ix = snake_tail[0] // settings.SNAKE_DIAMETER
+            iy = snake_tail[1] // settings.SNAKE_DIAMETER
+            index = self.__grid_index(ix, iy)
+            if 0 <= index < len(self.collision_grid):
+                self.collision_grid[index].remove(snake_tail)
 
     def handle_collisions(self, snakes):
         """ Check all border and snake to snake collisions.
@@ -222,13 +216,12 @@ class GameState:#   """ A complete collections of the game state. Contains the s
         # TODO move to server game logic
         self.pizza_manager = PizzaManager(self.pizzas)
 
-    def remove_pizza(self, pizza: Pizza):self.pizzas.remove(pizza)
-
-    def remove_pizza_by_id(self, pizza_id):#""" remove a pizza by id """
-        for pizza in self.pizzas:
-            if pizza.pizza_id == pizza_id:
-                self.pizzas.remove(pizza)
-                break
+    def remove_pizza(self, pizza: Pizza):
+        self.pizzas.remove(pizza)
 
     def remove_pizzas(self, removed_pizzas):#""" Remove all provided pizza_ids from active pizzas """
-        for pizza_id in removed_pizzas:self.remove_pizza_by_id(pizza_id)
+        for pizza_id in removed_pizzas:
+            for pizza in self.pizzas:
+                if pizza.pizza_id == pizza_id:
+                    self.pizzas.remove(pizza)
+                    break
