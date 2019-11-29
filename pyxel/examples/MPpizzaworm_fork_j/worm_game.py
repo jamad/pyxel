@@ -1,10 +1,8 @@
-
-
 """ Types for player interaction """
 from abc import ABC, abstractmethod
 import random
 #import settings
-from game_inputs import Action, InputHandler, InputState
+#from game_inputs import Action, InputHandler, InputState
 
 class Player(ABC):# """ Human player """
     def __init__(self, name: str):
@@ -22,7 +20,7 @@ class Player(ABC):# """ Human player """
 
 class Human(Player):
     """ Human player with controls """
-    def __init__(self, name: str, input_mapper: InputHandler, keyboard_controls):
+    def __init__(self, name: str, input_mapper, keyboard_controls):
         super().__init__(name)
         self.input_state = InputState()
         if keyboard_controls != (-1, -1):
@@ -921,9 +919,7 @@ class Snake:
                 return 0
         return 0
 
-
-class Pizza:
-    """ Contain the state of one pizza object """
+class Pizza:#  """ Contain the state of one pizza object """
     def __init__(self, x, y, radius, pizza_id):
         self.x = x
         self.y = y
@@ -937,14 +933,9 @@ class Pizza:
         dx = pos[0] - self.x
         dy = pos[1] - self.y
         dist = check_radius + self.radius
-        if dx * dx + dy * dy < dist * dist:
-            return 1
-        return 0
+        return dx**2+ dy**2 < dist**2
 
-    def mark_eaten(self):
-        """ Marks pizza as eaten.
-            Pizza will be removed at next manager update. """
-        self.still_good = 0
+    def mark_eaten(self):self.still_good = 0 #""" Marks pizza as eaten. Pizza will be removed at next manager update. """
 
 
 class CollisionManager:
@@ -1073,8 +1064,7 @@ class GameState:#   """ A complete collections of the game state. Contains the s
         # TODO move to server game logic
         self.pizza_manager = PizzaManager(self.pizzas)
 
-    def remove_pizza(self, pizza: Pizza):
-        self.pizzas.remove(pizza)
+    def remove_pizza(self, pizza: Pizza): self.pizzas.remove(pizza)
 
     def remove_pizzas(self, removed_pizzas):#""" Remove all provided pizza_ids from active pizzas """
         for pizza_id in removed_pizzas:
@@ -1082,7 +1072,5 @@ class GameState:#   """ A complete collections of the game state. Contains the s
                 if pizza.pizza_id == pizza_id:
                     self.pizzas.remove(pizza)
                     break
-
-
 GAME = Game()
 GAME.run()
