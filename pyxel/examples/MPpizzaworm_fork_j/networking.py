@@ -1,4 +1,5 @@
 # All network related thingies """
+'''
 
 import socket
 from abc import ABC, abstractmethod
@@ -614,3 +615,4 @@ class TCPClient:
         return typed_message
 
     def shutdown(self):self.sock.close()#""" Shutdown the client connection """
+'''

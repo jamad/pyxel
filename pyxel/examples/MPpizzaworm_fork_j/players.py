@@ -1,7 +1,8 @@
 """ Types for player interaction """
+'''
 from abc import ABC, abstractmethod
 import random
-import settings
+#import settings
 from game_inputs import Action, InputHandler, InputState
 
 class Player(ABC):# """ Human player """
@@ -46,3 +47,5 @@ class SimpleAI(Player):# """ Simple AI to test interfaces """
         del snake_id  # unused interface
         del added_parts  # unused interface
         del num_removed_parts  # unused interface
+
+'''
