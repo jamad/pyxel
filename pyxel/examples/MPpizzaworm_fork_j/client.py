@@ -6,10 +6,8 @@ import pygame
 
 from worm_game import InputHandler, InputState
 from worm_game import TCPClient, DEFAULT_PORT
-#from worm_game import GameRenderer
 from worm_game import GameState, Snake
 from worm_game import Player, Human
-
 
 class ClientApp:#  """ Client window that connects to the server """
     def __init__(self, host_addr: str, port: int = DEFAULT_PORT) -> None:
