@@ -1,11 +1,19 @@
 """ Types for player interaction """
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod ##### what is this for ????
 import random
-#import settings
-#from game_inputs import Action, InputHandler, InputState
+from collections import deque
+import math
+
+import socket
+import threading
+import struct
+from enum import IntEnum, unique, auto
+
+import pyxel as P
+from pyxel import btn,btnp,quit
 
 class Player(ABC):# """ Human player """
-    def __init__(self, name: str):
+    def __init__(self, name):
         self.name = name
         self.snake_input = 0
         self.snake_id = -1
@@ -20,7 +28,7 @@ class Player(ABC):# """ Human player """
 
 class Human(Player):
     """ Human player with controls """
-    def __init__(self, name: str, input_mapper, keyboard_controls):
+    def __init__(self, name, input_mapper, keyboard_controls):
         super().__init__(name)
         self.input_state = InputState()
         if keyboard_controls != (-1, -1):
@@ -47,19 +55,8 @@ class SimpleAI(Player):# """ Simple AI to test interfaces """
         del added_parts  # unused interface
         del num_removed_parts  # unused interface
 
-##############################################  ALL NETWORKING   ##########################
-
-import socket
-from abc import ABC, abstractmethod
-import threading
-import struct
-#from typing import List, Sequence, Optional, Tuple, Any, Dict
-from enum import IntEnum, unique
-#from game_state import Pizza#, SnakePart
-#from players import Player
-
+##############################################  ALL NETWORKING for the following part  ##########################
 AddrType = (str, int)
-
 DEFAULT_PORT = 45000
 
 @unique
@@ -148,12 +145,12 @@ def int_to_bytes(x: int) -> bytes:
     return x.to_bytes(4, byteorder='big')
 
 
-def bytes_to_int(byte_array: bytes) -> int:
+def bytes_to_int(byte_array: bytes):
     """ Bytes to int """
     return int.from_bytes(byte_array, byteorder='big')
 
 
-def pack_into(fmt: str, buffer: bytearray, offset: int, *args) -> int:
+def pack_into(fmt, buffer: bytearray, offset: int, *args):
     """ Pack data with struct.pack_into and given data format.
         return the size of the output data with that format.
         Use offset += pack_into() to update the offset for next call """
@@ -173,22 +170,22 @@ class Message(ABC):
         self.msg_type = msg_type
 
     @abstractmethod
-    def message_length(self) -> int:
+    def message_length(self):
         """ Calculate message payload length without header """
-    def total_message_size(self) -> int:
+    def total_message_size(self):
         """ Message size with header """
         return self.message_length() + struct.calcsize(self.header_format)
 
     @abstractmethod
     def encode(self) -> bytes:
         """ return the bytes of the encoded message """
-    def pack_header(self, buffer: bytearray) -> int:
+    def pack_header(self, buffer: bytearray):
         """ Write message header, return offset """
         return pack_into(self.header_format, buffer, 0, self.msg_type,
                          self.message_length())
 
     @staticmethod
-    def pack_str(buffer: bytearray, offset: int, msg: str) -> int:
+    def pack_str(buffer: bytearray, offset: int, msg):
         """ Encode variable length str, return packed size """
         fmt = '{}p'.format(len(msg) + 1)
         return pack_into(fmt, buffer, offset, msg.encode())
@@ -216,7 +213,7 @@ class PlayerRegisterMessage(Message):
         self.index = index
         self.player = player
 
-    def message_length(self) -> int:
+    def message_length(self):
         """ return message lenght """
         return (struct.calcsize(self.player_id_format) +
                 len(self.player.name) + 1)
@@ -248,7 +245,7 @@ class PlayerRegisteredMessage(Message):
         self.snake_id = snake_id
         self.remote_id = remote_id
 
-    def message_length(self) -> int:
+    def message_length(self):
         return struct.calcsize(self.register_format)
 
     def encode(self) -> bytes:
@@ -275,7 +272,7 @@ class SnakeInputMessage(Message):
         self.snake_id = snake_id
         self.snake_input = snake_input
 
-    def message_length(self) -> int:
+    def message_length(self):
         """ Calculate message length """
         return struct.calcsize(self.input_format)
 
@@ -314,7 +311,7 @@ class GameStateUpdateMessage(Message):
         self.snake_updates.append(
             (snake_id, snake_dir, removed_parts, added_parts))
 
-    def message_length(self) -> int:
+    def message_length(self):
         """ Calculate the message payload byte size (without header) """
         removed = len(self.removed_pizzas)
         added = len(self.added_pizzas)
@@ -328,7 +325,7 @@ class GameStateUpdateMessage(Message):
                 struct.calcsize(self.snake_part_format) * len(added_parts))
         return msg_len
 
-    def encode_pizzas(self, msg_buffer: bytearray, offset: int) -> int:
+    def encode_pizzas(self, msg_buffer: bytearray, offset: int):
         """ Encode pizzas into the message """
         offset += pack_into(self.pizza_count_format, msg_buffer, offset,
                             len(self.removed_pizzas), len(self.added_pizzas))
@@ -340,7 +337,7 @@ class GameStateUpdateMessage(Message):
                                 pizza.pizza_id, pizza.x, pizza.y, pizza.radius)
         return offset
 
-    def encode_snakes(self, msg_buffer: bytearray, offset: int) -> int:
+    def encode_snakes(self, msg_buffer: bytearray, offset: int):
         """ Encode snakes into the message """
         offset += pack_into(self.snake_count_format, msg_buffer, offset,
                             len(self.snake_updates))
@@ -360,7 +357,7 @@ class GameStateUpdateMessage(Message):
         offset = self.encode_snakes(msg_bytes, offset)
         return bytes(msg_bytes)
 
-    def decode_pizzas(self, payload: bytes, offset: int) -> int:
+    def decode_pizzas(self, payload: bytes, offset: int):
         """ Decode pizza update from the server message payload """
         removed, added = struct.unpack_from(self.pizza_count_format, payload,
                                             offset)
@@ -382,7 +379,7 @@ class GameStateUpdateMessage(Message):
 
         return offset
 
-    def decode_snakes(self, payload: bytes, offset: int) -> int:
+    def decode_snakes(self, payload: bytes, offset: int):
         """ Decode snakes part of the server game state update """
         snake_count, = struct.unpack_from(self.snake_count_format, payload,
                                           offset)
@@ -414,7 +411,7 @@ class GameStateUpdateMessage(Message):
 
 class RemotePlayer(Player):
     """ Player whose inputs come over network """
-    def __init__(self, remote_id: int, name: str):
+    def __init__(self, remote_id: int, name):
         super().__init__(name)
         self.remote_id = remote_id
         self.__last_snake_input = 0
@@ -667,20 +664,6 @@ class TCPClient:
 
 ########################################## MAIN 
 
-#""" Multiplayer Pizza Snake / Worm Game """
-from collections import deque
-import math
-import random
-
-from enum import IntEnum, unique, auto
-
-import pyxel as P
-from pyxel import btn,btnp,quit
-
-#from players import Player, Human, SimpleAI # about 80 lines
-#import networking # about 620 lines
-
-
 # General global settings for configuring the game
 PIZZA_RADIUS_RANGE = (2,10)#(10, 50)
 SNAKE_INITIAL_LENGTH = 4 #20
@@ -815,10 +798,6 @@ class Game:
         P.display.quit()
         self.server.shutdown()
 
-
-
-
-
 @unique
 class Action(IntEnum):#    """ All game actions that buttons can be mapped to """
     TURN_LEFT = 0
@@ -937,36 +916,23 @@ class Pizza:#  """ Contain the state of one pizza object """
 
     def mark_eaten(self):self.still_good = 0 #""" Marks pizza as eaten. Pizza will be removed at next manager update. """
 
-
 class CollisionManager:
     """ Handles all snake collisions.
         Contains a collision grid where grid size is the snake body diameter.
         Snake to snake colisions need to then check only the current and
         boundary grid cells to find all possible collisions. """
     def __init__(self):
-        self.dim = (1 + PLAY_AREA[0] // SNAKE_DIAMETER,
-                    1 + PLAY_AREA[1] // SNAKE_DIAMETER)
-        self.collision_grid: List[List[SnakePart]] = [
-            [] for i in range(self.dim[0] * self.dim[1])
-        ]
+        self.dim = (1 + PLAY_AREA[0] // SNAKE_DIAMETER,   1 + PLAY_AREA[1] // SNAKE_DIAMETER)
+        self.collision_grid: List[List[SnakePart]] = [  [] for i in range(self.dim[0] * self.dim[1])  ]
 
-    def __grid_index(self, grid_x, grid_y) -> int:
-        """ return grid index """
-        return grid_x + self.dim[0] * grid_y
+    def __grid_index(self, grid_x, grid_y):return grid_x + self.dim[0] * grid_y #""" return grid index """
 
-    def __collide_cell(self, grid_idx,snake_head):
-        """ Check snake collision inside a single collision grid cell. """
-        def part_collide(part1, part2):
-            """ Check snake part to snake part collision.
-                return 1 on collision. """
+    def __collide_cell(self, grid_idx,snake_head):# """ Check snake collision inside a single collision grid cell. """
+        def part_collide(part1, part2):# """ Check snake part to snake part collision.  return 1 on collision. """
             dx = part1[0] - part2[0]
             dy = part1[1] - part2[1]
-            return dx * dx + dy * dy < SNAKE_DIAMETER_SQ
-
-        return [
-            part for part in self.collision_grid[grid_idx]
-            if part_collide(part, snake_head)
-        ]
+            return dx**2 + dy**2 < SNAKE_DIAMETER_SQ 
+        return [ part for part in self.collision_grid[grid_idx] if part_collide(part, snake_head)     ]
 
     def get_colliders(self, snake_head):
         """ Return all possible snake to snake collision parts
@@ -977,7 +943,8 @@ class CollisionManager:
         y_min_range = max(iy - 1, 0)
         y_max_range = min(iy + 2, self.dim[1])
         for i in range(max(ix - 1, 0), min(ix + 2, self.dim[0])):
-            for j in range(y_min_range, y_max_range): collisions += self.__collide_cell(self.__grid_index(i, j), snake_head)
+            for j in range(y_min_range, y_max_range):
+                collisions += self.__collide_cell(self.__grid_index(i, j), snake_head)
         return collisions
 
     def add_parts(self, new_parts):# """ Update the collision grid with several Snake parts """
@@ -998,7 +965,7 @@ class CollisionManager:
     def handle_collisions(self, snakes):
         """ Check all border and snake to snake collisions.
             Mark snakes as 'killed' if collisions happen. """
-        def check_border_collisions(snake: Snake):
+        def check_border_collisions(snake):
             """ Check snake border collision """
             head = snake.head()
             radius = SNAKE_RADIUS
@@ -1006,11 +973,7 @@ class CollisionManager:
             if not radius <= head[1] < PLAY_AREA[1] - radius:return 1
             return 0
 
-        def check_snake_collisions(snake: Snake):
-            """ Check snake to snake collisions """
-            for col in self.get_colliders(snake.head()):
-                if not snake.is_own_head(col): return 1
-            return 0
+        def check_snake_collisions(snake):return any(not snake.is_own_head(col) for col in self.get_colliders(snake.head()))# """ Check snake to snake collisions """
 
         for snake in snakes:
             if check_border_collisions(snake):snake.kill()
@@ -1040,7 +1003,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
 
         while len(self.pizzas) < PIZZA_NUM: self.generate_pizza()
 
-    def eat(self, snake: Snake):
+    def eat(self, snake):
         """ Check if a snake is close enough to eat some pizzas.
             Fill the belly of the snake with eaten pizzas and make
             it grow. Multiple snakes can eat the same pizza before
