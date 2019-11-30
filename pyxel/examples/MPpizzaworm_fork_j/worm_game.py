@@ -480,18 +480,19 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
 PZ_R_RANGE = (2,10)#(10, 50) - pizza radius range
 S_INI_LEN = 4 #20 - SNAKE_INITIAL_LENGTH
 S_SPD = 0.8 # 4 - SNAKE_SPEED
-S_RAD = 2 # 10 - SNAKE_RADIUS
-S_DIA = 2 * S_RAD #- SNAKE_DIAMETER
+S_R = 2 # 10 - SNAKE_RADIUS
+S_D = 2 * S_R #- SNAKE_DIAMETER
 S_TURN = 6 # SNAKE_TURN_RATE
 PZ_NUM = 10 # PIZZA_NUM
 
-PA = (240, 160) # 20% smaller than original - PLAY_AREA
+W=240
+H=160
+PA=(W,H)# 20% smaller than original - PLAY_AREA
 
 MAX_PLAYERS = 8
 SNAKE_COLOR_ROT = 0.4
 PLAYER_COLOR_GRADIENT_SIZE = 16
-PLAYER_INIT_STATE = [(PA[0]//2, PA[1] - S_DIA, 270),(PA[0] // 2, S_DIA, 90),(S_DIA, PA[1] // 2, 0),(PA[0] - S_DIA, PA[1] // 2, 180),
-                     (S_DIA, S_DIA, 45),(S_DIA, PA[1] - S_DIA, 315),(PA[0] - S_DIA, S_DIA, 135),(PA[0] - S_DIA,PA[1] - S_DIA, 225)]
+PLAYER_INIT_STATE = [(W//2,H-S_D,270),(W//2,S_D,90),(S_D,H//2,0),(W-S_D,H//2,180),(S_D, S_D, 45),(S_D, H - S_D, 315),(W - S_D, S_D, 135),(W - S_D,H - S_D, 225)]
 
 class Game:
     def __init__(self):
@@ -573,15 +574,15 @@ class Game:
 
         for i, snake in enumerate(game_state.SN):
             POS=snake.ADDED[0]
-            r=S_RAD
+            r=S_R
             c = 11 if i<1 else 8
             for part in snake.ADDED:P.circ(part[0], part[1],r, c)# color 5 is temporarily
             snake.ADDED.clear()
-            for part in snake.RMVED:P.circ(part[0], part[1],r,c)# color 5 is temporarily
+            for part in snake.RMVED:P.circ(part[0], part[1],r,7)# color 5 is temporarily
             snake.RMVED.clear()
             if len(snake.BODY) > 0:
                 part = snake.BODY[0]
-                P.circ(part[0], part[1],r,c)
+                P.circ(part[0], part[1],r,6)
 
             P.text(POS[0],POS[1]-1,str(i),0)# player id shadow
             P.text(POS[0]-1,POS[1]-2,str(i),7 if i<1 else 10)# player id draw
@@ -692,7 +693,7 @@ class Snake:#    """ Contains the state of a single snake object """
     def is_own_head(self, colliding_part):#  """ Check if colliding part is part of snake's own head to            avoid self collisions """
         for i, part in enumerate(reversed(self.BODY)):
             if part == colliding_part:return 1
-            if i * S_SPD > S_DIA:return 0
+            if i * S_SPD > S_D:return 0
         return 0
 
 class Pizza:#  the state of one pizza object 
@@ -703,12 +704,9 @@ class Pizza:#  the state of one pizza object
         self.id = id
         self.eaten = 0
 
-    def is_hit(self, x,y, r):return ( x- self.x)**2+ (y- self.y)**2 < (r + self.r)**2# """ Hit check for the pizza and a collider at position 'pos' with radius 'check_radius' """
-    def mark_eaten(self):self.eaten = 1 #""" Marks pizza as eaten. Pizza will be removed at next manager update. """
-
 class CollisionManager:#  """ Handles all snake collisions.        Contains a collision grid where grid size is the snake body diameter.        Snake to snake colisions need to then check only the current and        boundary grid cells to find all possible collisions. """
     def __init__(self):
-        self.dim = (1 + PA[0] // S_DIA,   1 + PA[1] // S_DIA)
+        self.dim = (1 + W // S_D,   1 + H // S_D)
         self.collision_grid= [  [] for i in range(self.dim[0] * self.dim[1])  ]
 
     def __grid_index(self, grid_x, grid_y):return grid_x + self.dim[0] * grid_y #""" return grid index """
@@ -717,12 +715,12 @@ class CollisionManager:#  """ Handles all snake collisions.        Contains a co
         def part_collide(part1, part2):# """ Check snake part to snake part collision.  return 1 on collision. """
             dx = part1[0] - part2[0]
             dy = part1[1] - part2[1]
-            return dx**2 + dy**2 < S_DIA**2
+            return dx**2 + dy**2 < S_D**2
         return [ part for part in self.collision_grid[grid_idx] if part_collide(part, snake_head)     ]
 
     def get_colliders(self, snake_head):# """ Return all possible snake to snake collision parts   from current and boundary collision grid cells """
-        ix = snake_head[0] // S_DIA
-        iy = snake_head[1] // S_DIA
+        ix = snake_head[0] // S_D
+        iy = snake_head[1] // S_D
         collisions = []
         y_min_range = max(iy - 1, 0)
         y_max_range = min(iy + 2, self.dim[1])
@@ -733,15 +731,15 @@ class CollisionManager:#  """ Handles all snake collisions.        Contains a co
 
     def add_parts(self, ADDED):# """ Update the collision grid with several Snake parts """
         for snake_head in ADDED:
-            ix = snake_head[0] // S_DIA
-            iy = snake_head[1] // S_DIA
+            ix = snake_head[0] // S_D
+            iy = snake_head[1] // S_D
             index = self.__grid_index(ix, iy)
             if 0 <= index < len(self.collision_grid):  self.collision_grid[index].append(snake_head)
 
     def remove_parts(self, RMVED):#""" Remove multiple parts from the collision grid """
         for snake_tail in RMVED:
-            ix = snake_tail[0] // S_DIA
-            iy = snake_tail[1] // S_DIA
+            ix = snake_tail[0] // S_D
+            iy = snake_tail[1] // S_D
             index = self.__grid_index(ix, iy)
             if 0 <= index < len(self.collision_grid):
                 self.collision_grid[index].remove(snake_tail)
@@ -749,8 +747,8 @@ class CollisionManager:#  """ Handles all snake collisions.        Contains a co
     def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions.   Mark snakes as 'killed' if collisions happen. """
         def check_border_collisions(snake):# """ Check snake border collision """
             head = snake.head()
-            if not S_RAD <= head[0] < PA[0] - S_RAD:return 1
-            if not S_RAD <= head[1] < PA[1] - S_RAD:return 1
+            if not S_R <= head[0] < W - S_R:return 1
+            if not S_R <= head[1] < H - S_R:return 1
             return 0
 
         def check_snake_collisions(snake):return any(not snake.is_own_head(col) for col in self.get_colliders(snake.head()))# """ Check snake to snake collisions """
@@ -767,8 +765,8 @@ class PizzaManager:# """ Pizza generator and eating logic """
 
     def generate_pizza(self):# """ Generate a new pizza at random location """
         r = random.randrange(PZ_R_RANGE[0], PZ_R_RANGE[1] + 1)
-        x = r + random.randrange(PA[0] - 2 * r)
-        y = r + random.randrange(PA[1] - 2 * r)
+        x = r + random.randrange(W - 2 * r)
+        y = r + random.randrange(H - 2 * r)
         pizza = Pizza(x, y, r, len(self.PZ))
         self.NewPZ+=[pizza]
         self.PZ+=[pizza]
@@ -783,8 +781,8 @@ class PizzaManager:# """ Pizza generator and eating logic """
     def eat(self, snake):# """ Check if a snake touch to eat some pizzas. Multiple snakes can eat the same pizza before the eaten pizzas are removed at call to 'update'."""
         pos = snake.head()
         for pizza in self.PZ:
-            if pizza.is_hit(pos[0],pos[1],S_RAD):
-                pizza.mark_eaten()
+            if ( pos[0]- pizza.x)**2+ (pos[1]- pizza.y)**2 < (S_R + pizza.r)**2:
+                pizza.eaten = 1
                 snake.length+=pizza.r
 
     def clear_tick_changes(self):# """ Clear what pizzas were created or remove this frame """

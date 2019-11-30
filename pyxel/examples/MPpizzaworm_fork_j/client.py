@@ -73,12 +73,13 @@ class ClientApp:#  """ Client window that connects to the server """
             self.update_collision_structures()
             self.process_player_input()
             self.renderer.draw_game(self.game_state)
-            pygame.display.flip()
+            #P.display.flip()
+            P.flip()
             InputState.clear_tick_states()
             # Client rendering timed by server update messages
             # self.clock.tick(60)
         self.server_connection.shutdown()
-        pygame.display.quit()
+#        pygame.display.quit()
 
 HOST_ADDR = 1<len(sys.argv)and sys.argv[1] or  "127.0.0.1" #or'localhost'
 print('HOST_ADDR:',HOST_ADDR)
