@@ -546,15 +546,15 @@ class Game:
 
     def draw_game(self, game_state):
         P.cls(1)
-        for pz in game_state.PZ:
+        for pz in game_state.PZ:# draw all pizza
             P.circ(pz.x, pz.y,pz.r,4)# color 5 is temporarily
             P.circ(pz.x, pz.y,max(1,pz.r - 1),10)# color 6 is temporarily
             P.circ(pz.x, pz.y,max(1,pz.r - 2),9)# color 7 is temporarily
 
-        for player_idx, snake in enumerate(game_state.SN):
+        for i, snake in enumerate(game_state.SN):
             POS=snake.ADDED[0]
             r=S_RAD
-            c = 11 if player_idx<1 else 8
+            c = 11 if i<1 else 8
             for part in snake.ADDED:P.circ(part[0], part[1],r, c)# color 5 is temporarily
             snake.ADDED.clear()
             for part in snake.RMVED:P.circ(part[0], part[1],r,c)# color 5 is temporarily
@@ -562,8 +562,9 @@ class Game:
             if len(snake.BODY) > 0:
                 part = snake.BODY[0]
                 P.circ(part[0], part[1],r,c)
-            P.text(POS[0],POS[1]-1,str(player_idx),0)# player id shadow
-            P.text(POS[0]-1,POS[1]-2,str(player_idx),7 if player_idx<1 else 10)# player id draw
+
+            P.text(POS[0],POS[1]-1,str(i),0)# player id shadow
+            P.text(POS[0]-1,POS[1]-2,str(i),7 if i<1 else 10)# player id draw
 
     def run(self):# """ Main Program Loop """
         while self.ongame:
@@ -580,6 +581,8 @@ class Game:
 #            self.clock.tick(60)# --- Limit to 60 frames per second
         #P.display.quit()
         self.server.shutdown()
+
+STATES = []
 
 @unique
 class Action(IntEnum):#    """ All game actions that buttons can be mapped to """
@@ -608,7 +611,6 @@ class InputState:# """ Game action state """
         self.button_pressed = [0] * len(Action)
         self.button_released = [0] * len(Action)
 
-STATES = []
 
 class InputHandler:#""" Contains button states, handles input mappings to game actions """
     def add_mapping(self, input_state, key_code, action):self.button_mappings[action].append((key_code, input_state))#""" Create a input mapping from key_code to game action """
@@ -632,6 +634,7 @@ class Snake:#    """ Contains the state of a single snake object """
 
     def head(self):return self.BODY[-1]#"""  the front of the snake """
     def kill(self):self.alive = 0#""" Mark snake dead """
+
     def clear(self):#""" Mark all snake parts as removed, clear all parts """
         self.RMVED += self.BODY
         self.BODY = deque()
@@ -642,8 +645,6 @@ class Snake:#    """ Contains the state of a single snake object """
         self.pos = (init_state[0], init_state[1])
         self.dir = init_state[2]
         self.alive = 1
-
-    def grow(self, a):self.length += a#""" Grow the snake with 'food' amount """
 
     def crate_new_head(self, frame_num):
         self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
@@ -753,7 +754,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
         self.PZ+=[pizza]
 
     def update_pizzas(self):# """ Remove eaten pizzas, bake new ones to replace them """
-        for pizza in list(self.PZ):
+        for pizza in self.PZ:
             if pizza.eaten:
                 self.RMedPZ+=[pizza.id]
                 self.PZ.remove(pizza)
@@ -764,7 +765,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
         for pizza in self.PZ:
             if pizza.is_hit(pos[0],pos[1],S_RAD):
                 pizza.mark_eaten()
-                snake.grow(pizza.r)
+                snake.length+=pizza.r
 
     def clear_tick_changes(self):# """ Clear what pizzas were created or remove this frame """
         self.NewPZ.clear()
