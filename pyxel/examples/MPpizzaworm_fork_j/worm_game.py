@@ -336,12 +336,8 @@ class ClientConnection:#    """ Socket encapsulation for sending message to clie
 
         for player in new_players:
             if player.snake_id != -1:self.send_message(PlayerRegisteredMessage(player.snake_id, player.remote_id))
-            else:
-                pass
-                # TODO
-                # self.send_message(PlayerRefusedMessage(player.remote_id,"Game Full"))
-                #
-
+            else:pass# TO_DO   # self.send_message(PlayerRefusedMessage(player.remote_id,"Game Full"))
+                
     def send_message(self, msg):self.send_bytes(msg.encode()) #        """ Send a network message to this client connection """
 
     def send_bytes(self, msg):#        """ Send encoded network message to this client connection """
@@ -653,7 +649,7 @@ class InputHandler:#""" Contains button states, handles input mappings to game a
 class Snake:#    """ Contains the state of a single snake object """
     def __init__(self, init_state):
         self.length = S_INI_LEN
-        self.BODY = deque()
+        self.BODY = []
         self.pos= (init_state[0], init_state[1])
         self.dir= init_state[2]  # in Degrees
         self.ADDED = []
@@ -665,7 +661,7 @@ class Snake:#    """ Contains the state of a single snake object """
 
     def clear(self):#""" Mark all snake parts as removed, clear all parts """
         self.RMVED += self.BODY
-        self.BODY = deque()
+        self.BODY = []
         self.length = 0
 
     def reset(self, init_state):#""" Reset snake to initial position and length, mark it alive """
@@ -677,15 +673,15 @@ class Snake:#    """ Contains the state of a single snake object """
     def crate_new_head(self, frame_num):
         self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
 
-    def add_part(self, part):# """ Add a single part to the snake head """
-        self.BODY+=[part]
-        self.ADDED+=[part]
+    def add_part(self, x):# """ Add a single part to the snake head """
+        self.BODY+=[x]
+        self.ADDED+=[x]
 #        print(len(self.BODY),len(self.ADDED))
 
-    def add_parts(self, parts):# """ Add multiple parts to the snake head """
-        for part in parts:self.add_part(part)
+    def add_parts(self, G):# """ Add multiple parts to the snake head """
+        for x in G:self.add_part(x)
         
-    def remove_part(self):self.RMVED.append(self.BODY.popleft())# """ Remove one part from the tail of the snake """
+    def remove_part(self):self.RMVED.append(self.BODY.pop(0))# """ Remove one part from the tail of the snake """
 
     def update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts can be queried in ADDED and RMVED """
         self.dir += turn_input
@@ -698,7 +694,7 @@ class Snake:#    """ Contains the state of a single snake object """
         if self.length<len(self.BODY):self.remove_part() # what does it? 
 
     def is_own_head(self, colliding_part):#  """ Check if colliding part is part of snake's own head to            avoid self collisions """
-        for i, part in enumerate(reversed(self.BODY)):
+        for i, part in enumerate(self.BODY[::-1]):
             if part == colliding_part:return 1
             if i * S_SPD > SD:return 0
         return 0
