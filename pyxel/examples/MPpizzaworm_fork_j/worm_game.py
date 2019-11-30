@@ -10,14 +10,14 @@ import pyxel as P
 from pyxel import btn,btnp,quit
 
 class Human():# Player -it had Player arg  """ Human player with controls """
-    def __init__(self, name, input_mapper, keyboard_controls):
+    def __init__(self, name, im, kc):
         print('debug Human',name)
         self.name = name
         self.IN = InputState()
         
-        if keyboard_controls != (-1, -1):
-            input_mapper.add_mapping(self.IN, keyboard_controls[0], Action.TURN_LEFT)
-            input_mapper.add_mapping(self.IN, keyboard_controls[1], Action.TURN_RIGHT)
+        if kc != (-1, -1):
+            im.add_mapping(self.IN, kc[0], Action.TURN_LEFT)
+            im.add_mapping(self.IN, kc[1], Action.TURN_RIGHT)
 
     def act(self):#""" Process the inputs to the controlled snake.AI players can process the game state in this function. """
         if self.IN.button_state[Action.TURN_LEFT]:self.snake_input = -S_TURN
@@ -496,6 +496,7 @@ class Game:
         self.server.start_listening()
 
         self.add_player(Human('P1', self.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))#(P.K_LEFT, P.K_RIGHT)
+
         for i in range(3):self.add_player(SimpleAI('Bot%d'%i))
         #run(self.update, self.draw)
 
@@ -603,7 +604,10 @@ class Action(IntEnum):#    """ All game actions that buttons can be mapped to ""
 class InputState:# """ Game action state """
     @staticmethod
     def clear_tick_states():#    """ Clear the per tick 'pressed' and 'released'  states of all existing input states """
-        for state in STATES:state.clear_tick_actions()
+        for x in STATES:
+            #x.clear_tick_actions()        
+            x.button_pressed = [0] * len(Action)
+            x.button_released = [0] * len(Action)
 
     def __init__(self):
         self.button_state = [0] * len(Action)
@@ -612,27 +616,29 @@ class InputState:# """ Game action state """
         STATES.append(self)
         print('len(Action)',len(Action),Action)
 
-    def __del__(self):STATES.remove(self)
 
     def handle_action(self, action, down):# """ Update input state based on action """
         self.button_state[action] = down
         if down: self.button_pressed[action] = 1
         else: self.button_released[action] = 1
 
-    def clear_tick_actions(self):# """ Clear states for pressed this tick and released this tick """
-        self.button_pressed = [0] * len(Action)
-        self.button_released = [0] * len(Action)
+#    def clear_tick_actions(self):# """ Clear states for pressed this tick and released this tick """
+#        self.button_pressed = [0] * len(Action)
+#        self.button_released = [0] * len(Action)
 
 
 class InputHandler:#""" Contains button states, handles input mappings to game actions """
-    def add_mapping(self, IN, key_code, action):self.button_mappings[action].append((key_code, IN))#""" Create a input mapping from key_code to game action """
-    def __init__(self):self.button_mappings=[[]for _ in Action]
+    def add_mapping(self, IN, key_code, action):
+        self.button_mappings[action].append((key_code, IN))#""" Create a input mapping from key_code to game action """
+    def __init__(self):
+        self.button_mappings=[[]for _ in Action]
     def handle_event(self, event):#""" Process input mapping for event and update Action state """        
-        if event.type != P.KEY_DOWN and event.type != P.KEY_UP: return
+        if event.type != P.KEY_DOWN and event.type != P.KEY_UP:return
         is_down = event.type == P.KEY_DOWN
         for action_index, mapped_keys in enumerate(self.button_mappings):
-            for mapping in mapped_keys:
-                if event.key == mapping[0]:mapping[1].handle_action(Action(action_index), is_down)
+            for m in mapped_keys:
+                if event.key == m[0]:
+                    m[1].handle_action(Action(action_index), is_down)
 
 class Snake:#    """ Contains the state of a single snake object """
     def __init__(self, init_state):
