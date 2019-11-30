@@ -23,21 +23,14 @@ class Human():# Player -it had Player arg  """ Human player with controls """
         if self.IN.button_state[Action.TURN_LEFT]:self.snake_input = -S_TURN
         elif self.IN.button_state[Action.TURN_RIGHT]:self.snake_input = S_TURN
         else:self.snake_input = 0
-
-    def send_update(self, snake_id, added_parts,num_RMVED):
-        del snake_id  # unused interface
-        del added_parts  # unused interface
-        del num_RMVED  # unused interface
+#    def send_update(self, snake_id, added_parts,num_RMVED):pass
 
 class SimpleAI():# """ Simple AI to test interfaces """ - it had Player
     def __init__(self, name):
         self.num = 0
         self.name = name
     def act(self):self.snake_input = random.randrange(-5, 6)# """ Generate input """
-    def send_update(self, snake_id, added_parts,num_RMVED):# """ Interface which remote and AI players can override to upkeep game state """
-        del snake_id  # unused interface
-        del added_parts  # unused interface
-        del num_RMVED  # unused interface
+#    def send_update(self, snake_id, added_parts,num_RMVED):pass# """ Interface which remote and AI players can override to upkeep game state """
 
 ##############################################  ALL NETWORKING for the following part  ##########################
 
@@ -127,10 +120,10 @@ MSG_HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
 class PlayerRegisterMessage():# """ Register client player to the server """ - it had Message before
     player_id_format = '>i'
-    def __init__(self, index, player):
+    def __init__(self, i, p):
         self.msg_type = C_REGISTER_PLAYER
-        self.index = index
-        self.player = player
+        self.index = i
+        self.player = p
 
     def message_length(self):return (struct.calcsize(self.player_id_format) +  len(self.player.name) + 1)# """ return message lenght """
     def total_message_size(self):return self.message_length() + struct.calcsize(HEADER_FORMAT)
@@ -361,7 +354,7 @@ class ClientConnection:#    """ Socket encapsulation for sending message to clie
         self.message_callbacks[msg_type](payload)
 
     def shutdown(self):#   """ Shutdown client connection """
-        self.alive = False
+        self.alive = 0
         self.client_socket.close()
 
 class TCPServer:#   """ Contains socket connections to clients, handles new connections """
@@ -370,26 +363,25 @@ class TCPServer:#   """ Contains socket connections to clients, handles new conn
         server_address = ('', port)
         self.sock.bind(server_address)
         print("Listening at {}:{}".format(socket.gethostbyname(socket.gethostname()), port))
-        self.__new_connections = []
+        self.CONNsNew = []
         self.connections = []
         self.connection_lock = threading.Lock()
         self.listening_thread = None
 
-    def __add_connection(self, conn: ClientConnection):#""" Append new connection safely to list of new connections """
-        with self.connection_lock:self.__new_connections.append(conn)
-
     def get_new_connections(self):#""" Safely return a list of new connections """
         conns= []
         with self.connection_lock:
-            conns += self.__new_connections
-            self.__new_connections.clear()
+            conns += self.CONNsNew
+            self.CONNsNew.clear()
         return conns
+    
+    def __add_connection(self, conn):#""" Append new connection safely to list of new connections """
+        with self.connection_lock:self.CONNsNew+=[conn]
 
     def accept_connections(self):#""" Server listener socket loop, accept connections """
         try:
             self.sock.listen(5)
-            while 1:
-                self.__add_connection(ClientConnection(*self.sock.accept()))
+            while 1:self.__add_connection(ClientConnection(*self.sock.accept()))
         except socket.error: pass
         print("Closing server, thanks for playing!")
         self.sock.close()
@@ -434,13 +426,13 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
         msg.decode(payload)
         self.received_game_updates.append(msg)
 
-    def receive_game_uptate(self) -> bool:# """ Listen to messages until a game update        Message has been read, return False if            Connection was closed """
+    def receive_game_uptate(self) -> bool:# """ Listen to messages until a game update        Message has been read, return 0 if            Connection was closed """
         message_type = 0
         try:
             while message_type != S_GAME_UPDATE: message_type = self.receive_message()
         except socket.error:
             print("Connection closed!")
-            return False
+            return 0
         return 1
 
     def receive_message(self):#""" Read one server message from socket """
@@ -501,14 +493,13 @@ class Game:
         #run(self.update, self.draw)
 
     def add_player(self, player):#""" Add a player to the game. """
-        snake_id = len(self.GS.SN)
-        print('add_player() - snake_id',snake_id)
-        if snake_id < MAX_PLAYERS:
-            snake = Snake(PLAYER_INIT_STATE[snake_id])
-            player.snake_id = snake_id
-            
-            self.GS.SN+=[snake]
-            self.players.append(player)
+        id = len(self.GS.SN)
+        print('add_player() - id',id)
+        if MAX_PLAYERS<id:return # player is already full!
+
+        player.snake_id = id
+        self.GS.SN+=[Snake(PLAYER_INIT_STATE[id])]
+        self.players+=[player]
 
     def handle_events(self):#"""Main event pump"""
         if btnp(P.KEY_Q):quit()#  # If user clicked closeFlag that we are done so we exit this loop
@@ -604,8 +595,7 @@ class Action(IntEnum):#    """ All game actions that buttons can be mapped to ""
 class InputState:# """ Game action state """
     @staticmethod
     def clear_tick_states():#    """ Clear the per tick 'pressed' and 'released'  states of all existing input states """
-        for x in STATES:
-            #x.clear_tick_actions()        
+        for x in STATES:      
             x.button_pressed = [0] * len(Action)
             x.button_released = [0] * len(Action)
 
@@ -616,20 +606,19 @@ class InputState:# """ Game action state """
         STATES.append(self)
         print('len(Action)',len(Action),Action)
 
-
     def handle_action(self, action, down):# """ Update input state based on action """
         self.button_state[action] = down
-        if down: self.button_pressed[action] = 1
-        else: self.button_released[action] = 1
-
-#    def clear_tick_actions(self):# """ Clear states for pressed this tick and released this tick """
-#        self.button_pressed = [0] * len(Action)
-#        self.button_released = [0] * len(Action)
-
+        self.button_pressed[action] = down
+        self.button_released[action] = not down
+        print('debug button_state:',self.button_state[action])
+        print('debug button_pressed:',self.button_pressed[action])
+        print('debug button_released:',self.button_released[action])
 
 class InputHandler:#""" Contains button states, handles input mappings to game actions """
     def add_mapping(self, IN, key_code, action):
-        self.button_mappings[action].append((key_code, IN))#""" Create a input mapping from key_code to game action """
+        self.button_mappings[action]+=[(key_code, IN)]#""" Create a input mapping from key_code to game action """
+        print('self.button_mappings[action]',self.button_mappings[action])
+
     def __init__(self):
         self.button_mappings=[[]for _ in Action]
     def handle_event(self, event):#""" Process input mapping for event and update Action state """        
@@ -654,7 +643,6 @@ class Snake:#    """ Contains the state of a single snake object """
         self.alive = 1
 
     def head(self):return self.BODY[-1]#"""  the front of the snake """
-    def kill(self):self.alive = 0#""" Mark snake dead """
 
     def clear(self):#""" Mark all snake parts as removed, clear all parts """
         self.RMVED += self.BODY
@@ -682,10 +670,10 @@ class Snake:#    """ Contains the state of a single snake object """
         self.crate_new_head(frame_num)
         if self.length<len(self.BODY):self.remove_part() # what does it? 
 
-    def is_own_head(self, colliding_part):#  """ Check if colliding part is part of snake's own head to            avoid self collisions """
-        for i, part in enumerate(self.BODY[::-1]):
-            if part == colliding_part:return 1
-            if i * S_SPD > SD:return 0
+    def is_own_head(self, hit_part):#  """ Check if colliding part is part of snake's own head to avoid self collisions """
+        for i, x in enumerate(self.BODY[::-1]):
+            if x == hit_part:return 1
+            if SD< i*S_SPD:return 0
         return 0
 
 class Pizza:#  the state of one pizza object 
@@ -723,15 +711,16 @@ class CollisionManager:#  """  use snake body size grid for Snake to snake colis
             index = ix+GRID_W*iy
             if 0 <= index < len(self.COL_GRID): self.COL_GRID[index].remove(snake_tail)
 
-    def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions.   Mark snakes as 'killed' if collisions happen. """
+    def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions. """
         def check_border_collisions(snake):# """ Check snake border collision """
             head = snake.head()
             return not S_R<= head[0]<W-S_R or not S_R<=head[1]< H-S_R
 
-        def check_snake_collisions(snake):return any(not snake.is_own_head(col) for col in self.get_colliders(snake.head()))# """ Check snake to snake collisions """
+        def check_snake_collisions(snake):
+            return any(not snake.is_own_head(col) for col in self.get_colliders(snake.head()))# """ Check snake to snake collisions """
 
         for x in snakes:
-            if check_border_collisions(x) or check_snake_collisions(x):x.kill()
+            if check_border_collisions(x) or check_snake_collisions(x):x.alive = 0# killed - Mark snake dead
 
 class PizzaManager:# """ Pizza generator and eating logic """
     def __init__(self, pizzas):
