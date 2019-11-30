@@ -1,5 +1,5 @@
 """ Types for player interaction """
-from abc import ABC, abstractmethod ##### what is this for ????
+#from abc import ABC, abstractmethod ##### what is this for ???? - https://techacademy.jp/magazine/19310
 import random
 from collections import deque
 import math
@@ -12,7 +12,8 @@ from enum import IntEnum, unique, auto
 import pyxel as P
 from pyxel import btn,btnp,quit
 
-class Player(ABC):# """ Human player """
+'''
+class Player():# """ Human player """ - it had ABC for argument
     def __init__(self, name):
         self.name = name
         self.snake_input = 0
@@ -25,11 +26,13 @@ class Player(ABC):# """ Human player """
 
     @abstractmethod
     def send_update(self, snake_id, added_parts,num_RMVED):pass# """ Interface which remote and AI players can override to upkeep game state """
-
-class Human(Player):
+'''
+class Human():# Player -it had Player arg
     """ Human player with controls """
     def __init__(self, name, input_mapper, keyboard_controls):
-        super().__init__(name)
+#        super().__init__(name)
+        self.name = name
+
         self.input_state = InputState()
         if keyboard_controls != (-1, -1):
             input_mapper.add_mapping(self.input_state, keyboard_controls[0], Action.TURN_LEFT)
@@ -45,10 +48,11 @@ class Human(Player):
         del added_parts  # unused interface
         del num_RMVED  # unused interface
 
-class SimpleAI(Player):# """ Simple AI to test interfaces """
+class SimpleAI():# """ Simple AI to test interfaces """ - it had Player
     def __init__(self, name):
         self.num = 0
-        super().__init__(name)
+#        super().__init__(name)
+        self.name = name
     def act(self):self.snake_input = random.randrange(-5, 6)# """ Generate input """
     def send_update(self, snake_id, added_parts,num_RMVED):# """ Interface which remote and AI players can override to upkeep game state """
         del snake_id  # unused interface
@@ -145,6 +149,7 @@ def pack_into(fmt, buffer, offset, *args):#    """ Pack data with struct.pack_in
 MSG_HEADER_FORMAT = '>ii'
 MSG_HEADER_SIZE = struct.calcsize(MSG_HEADER_FORMAT)
 
+'''
 class Message(ABC):# """ Network message interface for serialization """
     header_format = '>ii'
     def __init__(self, msg_type: NetMessage):self.msg_type = msg_type
@@ -168,8 +173,8 @@ class Message(ABC):# """ Network message interface for serialization """
         return (name, offset + str_len + 1)
 
     def reserve_msg_buffer(self):return bytearray(self.total_message_size())#""" Reserve big enough buffer for the message """
-
-class PlayerRegisterMessage(Message):# """ Register client player to the server """
+'''
+class PlayerRegisterMessage():# """ Register client player to the server """ - it had Message before
     player_id_format = '>i'
 
     def __init__(self, index, player):
@@ -192,7 +197,7 @@ class PlayerRegisterMessage(Message):# """ Register client player to the server 
         name, _ = Message.unpack_str(payload, 4)
         return (remote_id, name)
 
-class PlayerRegisteredMessage(Message):# """ Register client player to the server """
+class PlayerRegisteredMessage():# """ Register client player to the server """ - it had Message before
     register_format = '>ii'
     def __init__(self, snake_id, remote_id):
         super().__init__(NetMessage.S_PLAYER_REGISTERED)
@@ -210,7 +215,7 @@ class PlayerRegisteredMessage(Message):# """ Register client player to the serve
     def decode(self, payload):# """ Decode snake_id and remote_id from server message """
         self.snake_id, self.remote_id = struct.unpack_from( self.register_format, payload, 0)
 
-class SnakeInputMessage(Message):# """ Client to server snake control message """
+class SnakeInputMessage():# """ Client to server snake control message """ - it had Message before
     input_format = '>ii'
     def __init__(self, snake_id, snake_input):
         super().__init__(NetMessage.C_SNAKE_INPUT)
@@ -226,7 +231,7 @@ class SnakeInputMessage(Message):# """ Client to server snake control message ""
 
     def decode(self, payload): self.snake_id, self.snake_input = struct.unpack_from( self.input_format, payload, 0)#""" Decode snake_id and input from message payload """
 
-class GameStateUpdateMessage(Message):
+class GameStateUpdateMessage(): # it had Message before
     """ Game state update message encoding and decoding  """
     pizza_count_format = '>ii'
     pizza_rem_id_format = '>i'
@@ -310,7 +315,7 @@ class GameStateUpdateMessage(Message):
         offset = self.decode_pizzas(payload, offset)
         offset = self.decode_snakes(payload, offset)
 
-class RemotePlayer(Player):#    """ Player whose inputs come over network """
+class RemotePlayer():#    """ Player whose inputs come over network """ - it had Player before
     def __init__(self, remote_id, name):
         super().__init__(name)
         self.remote_id = remote_id
@@ -365,7 +370,7 @@ class ClientConnection:
                 # self.send_message(PlayerRefusedMessage(player.remote_id,"Game Full"))
                 #
 
-    def send_message(self, msg: Message):self.send_bytes(msg.encode()) #        """ Send a network message to this client connection """
+    def send_message(self, msg):self.send_bytes(msg.encode()) #        """ Send a network message to this client connection """
 
     def send_bytes(self, msg):#        """ Send encoded network message to this client connection """
         if self.alive:
@@ -438,7 +443,7 @@ class TCPServer:#   """ Contains socket connections to clients, handles new conn
         self.listening_thread = threading.Thread(target=self.accept_connections, args=())
         self.listening_thread.start()
 
-    def broadcast(self, msg: Message):# """ Send a message to all connected clients"""
+    def broadcast(self, msg):# """ Send a message to all connected clients"""
         msg_data = msg.encode()
         for conn in self.connections:  conn.send_bytes(msg_data)
 
@@ -458,7 +463,7 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
         self.player_to_snake = {}
         print("Connected to {}:{}, self {}".format(server_addr[0],server_addr[1],self.sock.getsockname()))
 
-    def register_player(self, index, player: Player): self.sock.sendall(PlayerRegisterMessage(index, player).encode())#  """ Send register player message to server """
+    def register_player(self, index, player): self.sock.sendall(PlayerRegisterMessage(index, player).encode())#  """ Send register player message to server """
 
     def send_snake_input(self, local_id, snake_input):#  """ Send snake input for a player to the server """
         if local_id in self.player_to_snake:
@@ -530,7 +535,9 @@ class Game:
         snake_id = len(self.game_state.SN)
         if snake_id < MAX_PLAYERS:
             snake = Snake(PLAYER_INIT_STATE[snake_id])
-            player.bind_snake(snake_id)
+#            player.bind_snake(snake_id)
+            player.snake_id = snake_id
+            
             self.game_state.SN+=[snake]
             self.players.append(player)
 
@@ -540,7 +547,7 @@ class Game:
 
     def update(self):#""" Game logic update """
         for snake, player in zip(self.game_state.SN, self.players):
-            snake.update(self.frame_num, player.get_snake_input())
+            snake.update(self.frame_num, player.snake_input)
             self.game_state.collisions.add_parts(snake.ADDED)
             self.game_state.collisions.remove_parts(snake.RMVED)
             self.game_state.pizza_manager.eat(snake)
