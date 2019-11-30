@@ -516,14 +516,14 @@ class Game:
     def gameupdate(self):#""" Game logic update """
         for snake, player in zip(self.GS.SN, self.players):
             snake.snake_update(self.frame_num, player.snake_input)
-            self.GS.collisions.add_parts(snake.ADDED)
-            self.GS.collisions.remove_parts(snake.RMVED)
+            self.GS.COLs.add_parts(snake.ADDED)
+            self.GS.COLs.remove_parts(snake.RMVED)
             self.GS.PZ_MGR.eat(snake)
-        self.GS.collisions.handle_collisions(self.GS.SN)
+        self.GS.COLs.handle_collisions(self.GS.SN)
 
         for snake_id, snake in enumerate(self.GS.SN):
             if len(snake.BODY) > 0 and not snake.alive:
-                self.GS.collisions.remove_parts(snake.BODY)
+                self.GS.COLs.remove_parts(snake.BODY)
                 snake.clear()
                 # TODO remove? Game end logic and scoring?
                 snake.reset(*PLAYER_INIT_STATE[snake_id])
@@ -636,13 +636,16 @@ class InputHandler:#""" Contains button states, handles input mappings to game a
 
 class Snake:#    """ Contains the state of a single snake object """
     def __init__(self, init_state):
-        self.length = S_INI_LEN
+        self.reset(*init_state)
         self.BODY = []
-        self.pos= (init_state[0], init_state[1])
-        self.dir= init_state[2]  # in Degrees
         self.ADDED = []
         self.RMVED = []
-        self.alive= 1
+
+    def reset(self, x,y,d):#""" Reset snake to initial position and length, mark it alive """
+        self.length = S_INI_LEN
+        self.pos = (x,y)
+        self.dir = d
+        self.alive = 1
 
     def head(self):return self.BODY[-1]#"""  the front of the snake """
     def kill(self):self.alive = 0#""" Mark snake dead """
@@ -651,12 +654,6 @@ class Snake:#    """ Contains the state of a single snake object """
         self.RMVED += self.BODY
         self.BODY = []
         self.length = 0
-
-    def reset(self, x,y,d):#""" Reset snake to initial position and length, mark it alive """
-        self.length = S_INI_LEN
-        self.pos = (x,y)
-        self.dir = d
-        self.alive = 1
 
     def crate_new_head(self, frame_num):
         self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
@@ -676,9 +673,7 @@ class Snake:#    """ Contains the state of a single snake object """
         rad = math.radians(self.dir)
         vel = (S_SPD * math.cos(rad), S_SPD * math.sin(rad)) #""" Calculate movement vector from direction and velocity """
         self.pos = (self.pos[0] + vel[0], self.pos[1] + vel[1])
-
         self.crate_new_head(frame_num)
-
         if self.length<len(self.BODY):self.remove_part() # what does it? 
 
     def is_own_head(self, colliding_part):#  """ Check if colliding part is part of snake's own head to            avoid self collisions """
@@ -701,12 +696,12 @@ class CollisionManager:#  """  use snake body size grid for Snake to snake colis
     def get_colliders(self, x):# """ Return all possible snake to snake collision parts   from current and boundary collision grid cells """
         ix = x[0] // SD
         iy = x[1] // SD
-        collisions = []
+        COLs = []
         for i in range(max(ix - 1, 0), min(ix + 2, GRID_W)):
             for j in range(max(0, iy - 1), min(iy + 2, GRID_H)):
-                collisions += [ p for p in self.COL_GRID[i+GRID_W*j] if (p[0] - x[0])**2 + (p[1] - x[1])**2 < SD**2    ]
-#        print('collisions',collisions)
-        return collisions
+                COLs += [ p for p in self.COL_GRID[i+GRID_W*j] if (p[0] - x[0])**2 + (p[1] - x[1])**2 < SD**2    ]
+#        print('COLs',COLs)
+        return COLs
 
     def add_parts(self, ADDED):# """ Update the collision grid with several Snake parts """
         for x in ADDED:
@@ -725,15 +720,12 @@ class CollisionManager:#  """  use snake body size grid for Snake to snake colis
     def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions.   Mark snakes as 'killed' if collisions happen. """
         def check_border_collisions(snake):# """ Check snake border collision """
             head = snake.head()
-            if not S_R <= head[0] < W - S_R:return 1
-            if not S_R <= head[1] < H - S_R:return 1
-            return 0
+            return not S_R<= head[0]<W-S_R or not S_R<=head[1]< H-S_R
 
         def check_snake_collisions(snake):return any(not snake.is_own_head(col) for col in self.get_colliders(snake.head()))# """ Check snake to snake collisions """
 
-        for snake in snakes:
-            if check_border_collisions(snake):snake.kill()
-            elif check_snake_collisions(snake):snake.kill()
+        for x in snakes:
+            if check_border_collisions(x) or check_snake_collisions(x):x.kill()
 
 class PizzaManager:# """ Pizza generator and eating logic """
     def __init__(self, pizzas):
@@ -769,7 +761,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
 
 class GameState:#   """ A complete collections of the game state. Contains the state of Pizzas and Snakes """
     def __init__(self):
-        self.collisions = CollisionManager()
+        self.COLs = CollisionManager()
         self.SN = []#self.snakes
         self.PZ = []#self.pizzas
 
