@@ -217,8 +217,8 @@ class GameStateUpdateMessage(): # """ Game state update message encoding and dec
 
     def encode_pizzas(self, msg_buffer, offset):# """ Encode pizzas into the message """
         offset += pack_into(self.pizza_count_format, msg_buffer, offset,    len(self.RMedPZ), len(self.added_pizzas))
-        for pizza_id in self.RMedPZ:offset += pack_into(self.pizza_rem_id_format, msg_buffer, offset,pizza_id)
-        for pizza in self.added_pizzas:offset += pack_into(self.pizza_added_format, msg_buffer, offset,pizza.pizza_id, pizza.x, pizza.y, pizza.r)
+        for id in self.RMedPZ:offset += pack_into(self.pizza_rem_id_format, msg_buffer, offset,id)
+        for pizza in self.added_pizzas:offset += pack_into(self.pizza_added_format, msg_buffer, offset,pizza.id, pizza.x, pizza.y, pizza.r)
         return offset
 
     def encode_snakes(self, msg_buffer, offset):#""" Encode snakes into the message """
@@ -246,9 +246,9 @@ class GameStateUpdateMessage(): # """ Game state update message encoding and dec
 
         pizza_format_size = struct.calcsize(self.pizza_added_format)
         for _ in range(added):
-            pizza_id, pos_x, pos_y, r = struct.unpack_from(self.pizza_added_format, payload, offset)
+            id, pos_x, pos_y, r = struct.unpack_from(self.pizza_added_format, payload, offset)
             offset += pizza_format_size
-            self.added_pizzas.append(Pizza(pos_x, pos_y, r, pizza_id))
+            self.added_pizzas.append(Pizza(pos_x, pos_y, r, id))
         return offset
 
     def decode_snakes(self, payload: bytes, offset):#""" Decode snakes part of the server game state update """
@@ -629,7 +629,6 @@ class Snake:#    """ Contains the state of a single snake object """
         self.ADDED = []
         self.RMVED = []
         self.alive= 1
-        self.calc_movement_vector()
 
     def head(self):return self.BODY[-1]#"""  the front of the snake """
     def kill(self):self.alive = 0#""" Mark snake dead """
@@ -637,34 +636,37 @@ class Snake:#    """ Contains the state of a single snake object """
         self.RMVED += self.BODY
         self.BODY = deque()
         self.length = 0
+
     def reset(self, init_state):#""" Reset snake to initial position and length, mark it alive """
         self.length = S_INI_LEN
         self.pos = (init_state[0], init_state[1])
         self.dir = init_state[2]
         self.alive = 1
-    def grow(self, food):self.length += food#""" Grow the snake with 'food' amount """
-    def calc_movement_vector(self):# """ Calculate movement vector from direction and velocity """
-        rad = math.radians(self.dir)
-        return (S_SPD * math.cos(rad), S_SPD * math.sin(rad))
-    def crate_new_head(self, frame_num):self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
+
+    def grow(self, a):self.length += a#""" Grow the snake with 'food' amount """
+
+    def crate_new_head(self, frame_num):
+        self.add_part((int(self.pos[0]), int(self.pos[1]), frame_num))#""" Create a new head part at snake position """
+
     def add_part(self, part):# """ Add a single part to the snake head """
-        self.BODY.append(part)
-        self.ADDED.append(part)
+        self.BODY+=[part]
+        self.ADDED+=[part]
+#        print(len(self.BODY),len(self.ADDED))
+
     def add_parts(self, parts):# """ Add multiple parts to the snake head """
         for part in parts:self.add_part(part)
-    def remove_part(self):# """ Remove one part from the tail of the snake """
-        rem = self.BODY.popleft()
-        self.RMVED.append(rem)
-    def remove_n_parts(self, num):# """ Remove multiple parts from the snake tail """
-        for _ in range(num):self.remove_part()
+        
+    def remove_part(self):self.RMVED.append(self.BODY.popleft())# """ Remove one part from the tail of the snake """
 
-    def update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts             can be queried in ADDED and RMVED """
+    def update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts can be queried in ADDED and RMVED """
         self.dir += turn_input
-        vel = self.calc_movement_vector()
+        rad = math.radians(self.dir)
+        vel = (S_SPD * math.cos(rad), S_SPD * math.sin(rad)) #""" Calculate movement vector from direction and velocity """
         self.pos = (self.pos[0] + vel[0], self.pos[1] + vel[1])
 
         self.crate_new_head(frame_num)
-        if len(self.BODY) > self.length:self.remove_part()
+
+        if self.length<len(self.BODY):self.remove_part() # what does it? 
 
     def is_own_head(self, colliding_part):#  """ Check if colliding part is part of snake's own head to            avoid self collisions """
         for i, part in enumerate(reversed(self.BODY)):
@@ -673,11 +675,11 @@ class Snake:#    """ Contains the state of a single snake object """
         return 0
 
 class Pizza:#  the state of one pizza object 
-    def __init__(self, x, y, r, pizza_id):
+    def __init__(self, x, y, r, id):
         self.x = x
         self.y = y
         self.r = r
-        self.pizza_id = pizza_id
+        self.id = id
         self.eaten = 0
 
     def is_hit(self, x,y, r):return ( x- self.x)**2+ (y- self.y)**2 < (r + self.r)**2# """ Hit check for the pizza and a collider at position 'pos' with radius 'check_radius' """
@@ -738,7 +740,6 @@ class CollisionManager:#  """ Handles all snake collisions.        Contains a co
 
 class PizzaManager:# """ Pizza generator and eating logic """
     def __init__(self, pizzas):
-        self.next_pizza_id = 0
         self.PZ = pizzas
         self.NewPZ = []
         self.RMedPZ = []
@@ -747,15 +748,14 @@ class PizzaManager:# """ Pizza generator and eating logic """
         r = random.randrange(PZ_R_RANGE[0], PZ_R_RANGE[1] + 1)
         x = r + random.randrange(PA[0] - 2 * r)
         y = r + random.randrange(PA[1] - 2 * r)
-        self.next_pizza_id += 1
-        pizza = Pizza(x, y, r, self.next_pizza_id)
+        pizza = Pizza(x, y, r, len(self.PZ))
         self.NewPZ+=[pizza]
         self.PZ+=[pizza]
 
     def update_pizzas(self):# """ Remove eaten pizzas, bake new ones to replace them """
         for pizza in list(self.PZ):
             if pizza.eaten:
-                self.RMedPZ.append(pizza.pizza_id)
+                self.RMedPZ+=[pizza.id]
                 self.PZ.remove(pizza)
         while len(self.PZ) < PZ_NUM: self.generate_pizza()
 
@@ -782,9 +782,9 @@ class GameState:#   """ A complete collections of the game state. Contains the s
     def remove_pizza(self, pizza): self.PZ.remove(pizza)
 
     def remove_pizzas(self, removed_pizzas):#""" Remove all provided pizza_ids from active pizzas """
-        for pizza_id in removed_pizzas:
+        for id in removed_pizzas:
             for pizza in self.PZ:
-                if pizza.pizza_id == pizza_id:
+                if pizza.id == id:
                     self.PZ.remove(pizza)
                     break
 
