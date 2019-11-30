@@ -2,36 +2,39 @@
 
 from typing import List
 import sys
-import pygame
+#import pygame
+import pyxel as P
 
 from worm_game import InputHandler, InputState
 from worm_game import TCPClient, DEFAULT_PORT
 from worm_game import GameState, Snake
-from worm_game import Player, Human
+from worm_game import Human # Player removed
 
 class ClientApp:#  """ Client window that connects to the server """
-    def __init__(self, host_addr: str, port: int = DEFAULT_PORT) -> None:
-        pygame.init()
+    def __init__(self, host_addr, port = DEFAULT_PORT):
+#        pygame.init()
+        P.init(240,160,scale=2)# pygame >> pyxel
         self.game_state = GameState()
         self.server_connection = TCPClient((host_addr, port))
-        self.done: bool = False
-        self.players: List[Player] = []
+        self.done = False
+        self.players = []
         self.inputs = InputHandler()
-        self.renderer = GameRenderer()
+#        self.renderer = GameRenderer()
         # might not be needed when syncing to server
-        self.clock = pygame.time.Clock()
+#        self.clock = pygame.time.Clock()
 
-    def add_player(self, player: Player):self.players.append(player)#""" Add a player to the game. """
+    def add_player(self, player):
+        self.players.append(player)#""" Add a player to the game. """
 
-    def init_client_players(self):
-        for local_id, player in enumerate(self.players):self.server_connection.register_player(local_id, player)#""" Register client players to the server """
+#    def init_client_players(self):for local_id, player in enumerate(self.players):self.server_connection.register_player(local_id, player)#""" Register client players to the server """
 
     def handle_events(self):#""" Main event pump """
+        ''' tmp disable
         for event in pygame.event.get():  # User did something
             if event.type == pygame.QUIT:  # If user clicked close
                 self.done = True  # Flag that we are done so we exit this loop
             else:self.inputs.handle_event(event)
-
+        '''
     def update_game_state(self):#""" Apply server state updates to local state """
         for game_update in self.server_connection.received_game_updates:
             self.game_state.remove_pizzas(game_update.removed_pizzas)
@@ -55,7 +58,10 @@ class ClientApp:#  """ Client window that connects to the server """
             self.server_connection.send_snake_input(local_id,player.get_snake_input())
 
     def run(self):#""" Main Program Loop """
-        self.init_client_players()
+#        self.init_client_players()
+        for local_id, player in enumerate(self.players):
+            self.server_connection.register_player(local_id, player)#""" Register client players to the server """
+
         while not self.done:
             self.handle_events()
 
@@ -77,6 +83,9 @@ class ClientApp:#  """ Client window that connects to the server """
 HOST_ADDR = 1<len(sys.argv)and sys.argv[1] or  "127.0.0.1" #or'localhost'
 print('HOST_ADDR:',HOST_ADDR)
 GAME = ClientApp(HOST_ADDR)
-GAME.add_player(Human('R1', GAME.inputs, (pygame.K_LEFT, pygame.K_RIGHT)))
-GAME.add_player(Human('R2', GAME.inputs, (pygame.K_a, pygame.K_d)))
+
+# temp disable
+#GAME.add_player(Human('R1', GAME.inputs, (pygame.K_LEFT, pygame.K_RIGHT)))
+#GAME.add_player(Human('R2', GAME.inputs, (pygame.K_a, pygame.K_d)))
+
 GAME.run()
