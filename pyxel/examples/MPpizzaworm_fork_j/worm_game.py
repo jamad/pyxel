@@ -13,15 +13,15 @@ class Human():# Player -it had Player arg  """ Human player with controls """
     def __init__(self, name, input_mapper, keyboard_controls):
         print('debug Human',name)
         self.name = name
-        self.input_state = InputState()
+        self.IN = InputState()
         
         if keyboard_controls != (-1, -1):
-            input_mapper.add_mapping(self.input_state, keyboard_controls[0], Action.TURN_LEFT)
-            input_mapper.add_mapping(self.input_state, keyboard_controls[1], Action.TURN_RIGHT)
+            input_mapper.add_mapping(self.IN, keyboard_controls[0], Action.TURN_LEFT)
+            input_mapper.add_mapping(self.IN, keyboard_controls[1], Action.TURN_RIGHT)
 
     def act(self):#""" Process the inputs to the controlled snake.AI players can process the game state in this function. """
-        if self.input_state.button_state[Action.TURN_LEFT]:self.snake_input = -S_TURN
-        elif self.input_state.button_state[Action.TURN_RIGHT]:self.snake_input = S_TURN
+        if self.IN.button_state[Action.TURN_LEFT]:self.snake_input = -S_TURN
+        elif self.IN.button_state[Action.TURN_RIGHT]:self.snake_input = S_TURN
         else:self.snake_input = 0
 
     def send_update(self, snake_id, added_parts,num_RMVED):
@@ -448,6 +448,7 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
         msg_type, msg_len = struct.unpack_from(HEADER_FORMAT, header, 0)
         payload = self.sock.recv(msg_len)
         typed_message = msg_type
+
         self.message_callbacks[typed_message](payload)
         return typed_message
 
@@ -624,7 +625,7 @@ class InputState:# """ Game action state """
 
 
 class InputHandler:#""" Contains button states, handles input mappings to game actions """
-    def add_mapping(self, input_state, key_code, action):self.button_mappings[action].append((key_code, input_state))#""" Create a input mapping from key_code to game action """
+    def add_mapping(self, IN, key_code, action):self.button_mappings[action].append((key_code, IN))#""" Create a input mapping from key_code to game action """
     def __init__(self):self.button_mappings=[[]for _ in Action]
     def handle_event(self, event):#""" Process input mapping for event and update Action state """        
         if event.type != P.KEY_DOWN and event.type != P.KEY_UP: return
@@ -665,10 +666,10 @@ class Snake:#    """ Contains the state of a single snake object """
         self.ADDED+=[x]
 #        print(len(self.BODY),len(self.ADDED))
 
-    def add_parts(self, G):# """ Add multiple parts to the snake head """
+    def add_parts(self, G):# """ Add multi bodies to the snake head """
         for x in G:self.add_part(x)
         
-    def remove_part(self):self.RMVED.append(self.BODY.pop(0))# """ Remove one part from the tail of the snake """
+    def remove_part(self):self.RMVED+=[self.BODY.pop(0)]# """ Remove a part from the TAIL """
 
     def snake_update(self, frame_num, turn_input):# """ Apply inputs and update snake head and tail. Changed parts can be queried in ADDED and RMVED """
         self.dir += turn_input
@@ -695,15 +696,12 @@ class Pizza:#  the state of one pizza object
         self.eaten = 0
 
 class CollisionManager:#  """  use snake body size grid for Snake to snake colisions check only the current and boundary grid cells to find all possible collisions. """
-    def __init__(self):self.collision_grid= [  [] for _ in range(GRID_W*GRID_H)  ]
-    def __grid_index(self, grid_x, grid_y):return grid_x + GRID_W * grid_y #""" return grid index """
+    def __init__(self):self.COL_GRID= [ [] for _ in range(GRID_W*GRID_H)  ]
+    def __grid_index(self, grid_x, grid_y):
+        return grid_x + GRID_W * grid_y #""" return grid index """
 
-    def __collide_cell(self, grid_idx,snake_head):# """ Check snake collision inside a single collision grid cell. """
-        def part_collide(part1, part2):# """ Check snake part to snake part collision.  return 1 on collision. """
-            dx = part1[0] - part2[0]
-            dy = part1[1] - part2[1]
-            return dx**2 + dy**2 < SD**2
-        return [ part for part in self.collision_grid[grid_idx] if part_collide(part, snake_head)     ]
+    def __collide_cell(self, i,snake_head):# """ Check snake collision inside a single collision grid cell. """
+        return [ p for p in self.COL_GRID[i] if (p[0] - snake_head[0])**2 + (p[1] - snake_head[1])**2 < SD**2    ]# """ Check snake part to snake part collision.  return 1 on collision. """
 
     def get_colliders(self, snake_head):# """ Return all possible snake to snake collision parts   from current and boundary collision grid cells """
         ix = snake_head[0] // SD
@@ -720,14 +718,14 @@ class CollisionManager:#  """  use snake body size grid for Snake to snake colis
             ix = snake_head[0] // SD
             iy = snake_head[1] // SD
             index = self.__grid_index(ix, iy)
-            if 0 <= index < len(self.collision_grid):  self.collision_grid[index].append(snake_head)
+            if 0 <= index < len(self.COL_GRID):  self.COL_GRID[index].append(snake_head)
 
     def remove_parts(self, RMVED):#""" Remove multiple parts from the collision grid """
         for snake_tail in RMVED:
             ix = snake_tail[0] // SD
             iy = snake_tail[1] // SD
             index = self.__grid_index(ix, iy)
-            if 0 <= index < len(self.collision_grid): self.collision_grid[index].remove(snake_tail)
+            if 0 <= index < len(self.COL_GRID): self.COL_GRID[index].remove(snake_tail)
 
     def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions.   Mark snakes as 'killed' if collisions happen. """
         def check_border_collisions(snake):# """ Check snake border collision """
