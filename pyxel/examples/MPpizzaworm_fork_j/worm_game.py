@@ -11,13 +11,13 @@ from enum import IntEnum, unique, auto
 import pyxel as P
 from pyxel import btn,btnp,quit
 
-
 class Human():# Player -it had Player arg
     """ Human player with controls """
     def __init__(self, name, input_mapper, keyboard_controls):
         self.name = name
 
         self.input_state = InputState()
+        
         if keyboard_controls != (-1, -1):
             input_mapper.add_mapping(self.input_state, keyboard_controls[0], Action.TURN_LEFT)
             input_mapper.add_mapping(self.input_state, keyboard_controls[1], Action.TURN_RIGHT)
@@ -54,6 +54,7 @@ class NetMessage(IntEnum):#""" All game actions that buttons can be mapped to ""
     S_NEW_PLAYER = 2001
     S_GAME_UPDATE = 3000
     S_PLAYER_REFUSED = 8000
+
 # Messages:
 
 # Client to server:
@@ -132,7 +133,6 @@ def pack_into(fmt, buffer, offset, *args):#    """ Pack data with struct.pack_in
 MSG_HEADER_FORMAT = '>ii'
 MSG_HEADER_SIZE = struct.calcsize(MSG_HEADER_FORMAT)
 
-
 class PlayerRegisterMessage():# """ Register client player to the server """ - it had Message before
     player_id_format = '>i'
 
@@ -140,20 +140,30 @@ class PlayerRegisterMessage():# """ Register client player to the server """ - i
         super().__init__(NetMessage.C_REGISTER_PLAYER)
         self.index = index
         self.player = player
+        self.header_format = '>ii'
+#        self.msg_type = msg_type
 
     def message_length(self):return (struct.calcsize(self.player_id_format) +  len(self.player.name) + 1)# """ return message lenght """
+    def total_message_size(self):return self.message_length() + struct.calcsize(self.header_format)
+    def reserve_msg_buffer(self):  return bytearray(self.total_message_size())#""" Reserve big enough buffer for the message """
+    def pack_header(self, buffer):return pack_into(self.header_format, buffer, 0, self.msg_type,self.message_length())#""" Write message header, return offset """
+
 
     def encode(self):#""" encode message into bytes """
         msg_bytes = self.reserve_msg_buffer()
         offset = self.pack_header(msg_bytes)
         offset += pack_into(self.player_id_format, msg_bytes, offset, self.index)
-        offset += self.pack_str(msg_bytes, offset, self.player.name)
+        offset += pack_into('{}p'.format(len(self.player.name) + 1), msg_bytes, offset, self.player.name.encode())
         return bytes(msg_bytes)
 
+    
     @staticmethod
     def decode(payload) :# """ Return decoded [remote_id, player_name] tuple """
         remote_id, = struct.unpack_from(PlayerRegisterMessage.player_id_format, payload, 0)
-        name, _ = Message.unpack_str(payload, 4)
+        offset=4
+        #""" Unpack variable lenght str from message payload    """
+        str_len, = struct.unpack_from('B', payload, offset)
+        name = struct.unpack_from( '{}p'.format(str_len + 1), payload, offset)
         return (remote_id, name)
 
 class PlayerRegisteredMessage():# """ Register client player to the server """ - it had Message before
@@ -162,8 +172,12 @@ class PlayerRegisteredMessage():# """ Register client player to the server """ -
         super().__init__(NetMessage.S_PLAYER_REGISTERED)
         self.snake_id = snake_id
         self.remote_id = remote_id
+        self.header_format = '>ii'
 
     def message_length(self): return struct.calcsize(self.register_format)
+    def total_message_size(self):return self.message_length() + struct.calcsize(self.header_format)
+    def reserve_msg_buffer(self):  return bytearray(self.total_message_size())#""" Reserve big enough buffer for the message """
+    def pack_header(self, buffer):return pack_into(self.header_format, buffer, 0, self.msg_type,self.message_length())#""" Write message header, return offset """
 
     def encode(self):# """ encode message into bytes """
         msg_bytes= self.reserve_msg_buffer()
@@ -171,8 +185,7 @@ class PlayerRegisteredMessage():# """ Register client player to the server """ -
         offset += pack_into(self.register_format, msg_bytes, offset,   self.snake_id, self.remote_id)
         return bytes(msg_bytes)
 
-    def decode(self, payload):# """ Decode snake_id and remote_id from server message """
-        self.snake_id, self.remote_id = struct.unpack_from( self.register_format, payload, 0)
+    def decode(self, payload): self.snake_id, self.remote_id = struct.unpack_from( self.register_format, payload, 0)# """ Decode snake_id and remote_id from server message """
 
 class SnakeInputMessage():# """ Client to server snake control message """ - it had Message before
     input_format = '>ii'
@@ -180,8 +193,13 @@ class SnakeInputMessage():# """ Client to server snake control message """ - it 
         super().__init__(NetMessage.C_SNAKE_INPUT)
         self.snake_id = snake_id
         self.snake_input = snake_input
+        self.header_format = '>ii'
 
     def message_length(self):return struct.calcsize(self.input_format)#  """ Calculate message length """
+    def total_message_size(self):return self.message_length() + struct.calcsize(self.header_format)
+    def pack_header(self, buffer):return pack_into(self.header_format, buffer, 0, self.msg_type,self.message_length())#""" Write message header, return offset """
+    def reserve_msg_buffer(self):  return bytearray(self.total_message_size())#""" Reserve big enough buffer for the message """
+    
     def encode(self):# """ Encode message to bytes to be send """
         msg_bytes= self.reserve_msg_buffer()
         offset = self.pack_header(msg_bytes)
@@ -203,6 +221,7 @@ class GameStateUpdateMessage(): # """ Game state update message encoding and dec
         self.added_pizzas = added_pizzas
         self.RMedPZ = removed_pizzas
         self.snake_updates= []
+        self.header_format = '>ii'
 
     def buffer_snake_update(self, snake_id, snake_dir,added_parts,RMVED):
         self.snake_updates.append( (snake_id, snake_dir, RMVED, added_parts))#   """ Buffer a single snake information internally """
@@ -227,6 +246,10 @@ class GameStateUpdateMessage(): # """ Game state update message encoding and dec
             offset += pack_into(self.snake_header_format, msg_buffer, offset,snake_id, snake_dir, rem_count, len(added))
             for part in added:offset += pack_into(self.snake_part_format, msg_buffer, offset,part[0], part[1], part[2])
         return offset
+    
+    def total_message_size(self):return self.message_length() + struct.calcsize(self.header_format)
+    def reserve_msg_buffer(self):  return bytearray(self.total_message_size())#""" Reserve big enough buffer for the message """
+    def pack_header(self, buffer):return pack_into(self.header_format, buffer, 0, self.msg_type,self.message_length())#""" Write message header, return offset """
 
     def encode(self):# """ Encode a complete server to client message as bytes object """
         msg_bytes= self.reserve_msg_buffer()
@@ -587,7 +610,7 @@ STATES = []
 @unique
 class Action(IntEnum):#    """ All game actions that buttons can be mapped to """
     TURN_LEFT = 0
-    TURN_RIGHT = auto() # what is it ????
+    TURN_RIGHT = auto() # what is it ???? >> looks coming from enum
 
 class InputState:# """ Game action state """
     @staticmethod
@@ -781,7 +804,6 @@ class GameState:#   """ A complete collections of the game state. Contains the s
         self.PZ_MGR = PizzaManager(self.PZ)
 
     def remove_pizza(self, pizza): self.PZ.remove(pizza)
-
     def remove_pizzas(self, removed_pizzas):#""" Remove all provided pizza_ids from active pizzas """
         for id in removed_pizzas:
             for pizza in self.PZ:
