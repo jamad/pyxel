@@ -696,35 +696,30 @@ class Pizza:#  the state of one pizza object
         self.eaten = 0
 
 class CollisionManager:#  """  use snake body size grid for Snake to snake colisions check only the current and boundary grid cells to find all possible collisions. """
-    def __init__(self):self.COL_GRID= [ [] for _ in range(GRID_W*GRID_H)  ]
-    def __grid_index(self, grid_x, grid_y):
-        return grid_x + GRID_W * grid_y #""" return grid index """
+    def __init__(self):self.COL_GRID= [ [] for _ in range(GRID_W*GRID_H)]
 
-    def __collide_cell(self, i,snake_head):# """ Check snake collision inside a single collision grid cell. """
-        return [ p for p in self.COL_GRID[i] if (p[0] - snake_head[0])**2 + (p[1] - snake_head[1])**2 < SD**2    ]# """ Check snake part to snake part collision.  return 1 on collision. """
-
-    def get_colliders(self, snake_head):# """ Return all possible snake to snake collision parts   from current and boundary collision grid cells """
-        ix = snake_head[0] // SD
-        iy = snake_head[1] // SD
+    def get_colliders(self, x):# """ Return all possible snake to snake collision parts   from current and boundary collision grid cells """
+        ix = x[0] // SD
+        iy = x[1] // SD
         collisions = []
         for i in range(max(ix - 1, 0), min(ix + 2, GRID_W)):
             for j in range(max(0, iy - 1), min(iy + 2, GRID_H)):
-                collisions += self.__collide_cell(self.__grid_index(i, j), snake_head)
+                collisions += [ p for p in self.COL_GRID[i+GRID_W*j] if (p[0] - x[0])**2 + (p[1] - x[1])**2 < SD**2    ]
 #        print('collisions',collisions)
         return collisions
 
     def add_parts(self, ADDED):# """ Update the collision grid with several Snake parts """
-        for snake_head in ADDED:
-            ix = snake_head[0] // SD
-            iy = snake_head[1] // SD
-            index = self.__grid_index(ix, iy)
-            if 0 <= index < len(self.COL_GRID):  self.COL_GRID[index].append(snake_head)
+        for x in ADDED:
+            ix = x[0] // SD
+            iy = x[1] // SD
+            index = ix+GRID_W*iy
+            if 0 <= index < len(self.COL_GRID):  self.COL_GRID[index].append(x)
 
     def remove_parts(self, RMVED):#""" Remove multiple parts from the collision grid """
         for snake_tail in RMVED:
             ix = snake_tail[0] // SD
             iy = snake_tail[1] // SD
-            index = self.__grid_index(ix, iy)
+            index = ix+GRID_W*iy
             if 0 <= index < len(self.COL_GRID): self.COL_GRID[index].remove(snake_tail)
 
     def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions.   Mark snakes as 'killed' if collisions happen. """
