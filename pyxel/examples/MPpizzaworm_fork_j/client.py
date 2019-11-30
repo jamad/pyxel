@@ -5,10 +5,7 @@ import sys
 #import pygame
 import pyxel as P
 
-from worm_game import InputHandler, InputState
-from worm_game import TCPClient, DEFAULT_PORT
-from worm_game import GameState, Snake
-from worm_game import Human # Player removed
+from worm_game import InputHandler, InputState,TCPClient, DEFAULT_PORT,GameState, Snake,Human,Game # Player removed
 
 class ClientApp:#  """ Client window that connects to the server """
     def __init__(self, host_addr, port = DEFAULT_PORT):
@@ -16,10 +13,11 @@ class ClientApp:#  """ Client window that connects to the server """
         P.init(240,160,scale=2)# pygame >> pyxel
         self.game_state = GameState()
         self.server_connection = TCPClient((host_addr, port))
-        self.done = False
+        self.done = 0
         self.players = []
         self.inputs = InputHandler()
-#        self.renderer = GameRenderer()
+
+        self.draw_game = Game().draw_game
         # might not be needed when syncing to server
 #        self.clock = pygame.time.Clock()
 
@@ -32,23 +30,23 @@ class ClientApp:#  """ Client window that connects to the server """
         ''' tmp disable
         for event in pygame.event.get():  # User did something
             if event.type == pygame.QUIT:  # If user clicked close
-                self.done = True  # Flag that we are done so we exit this loop
+                self.done = 1  # Flag that we are done so we exit this loop
             else:self.inputs.handle_event(event)
         '''
     def update_game_state(self):#""" Apply server state updates to local state """
         for game_update in self.server_connection.received_game_updates:
             self.game_state.remove_pizzas(game_update.removed_pizzas)
-            self.game_state.pizzas += game_update.added_pizzas
+            self.game_state.PZ += game_update.added_pizzas
             for sid, sdir, rem_count, parts in game_update.snake_updates:
-                while sid >= len(self.game_state.snakes):self.game_state.snakes.append(Snake((0, 0, 0)))
-                snake = self.game_state.snakes[sid]
+                while sid >= len(self.game_state.SN):self.game_state.SN.append(Snake((0, 0, 0)))
+                snake = self.game_state.SN[sid]
                 snake.dir = sdir
                 snake.add_parts(parts)
                 snake.remove_n_parts(rem_count)
         self.server_connection.received_game_updates.clear()
 
     def update_collision_structures(self):#""" Update collision structure for the use of AI player """
-        for snake in self.game_state.snakes:
+        for snake in self.game_state.SN:
             self.game_state.collisions.add_parts(snake.new_parts)
             self.game_state.collisions.remove_parts(snake.removed_parts)
 
@@ -66,13 +64,13 @@ class ClientApp:#  """ Client window that connects to the server """
             self.handle_events()
 
             if not self.server_connection.receive_game_uptate():
-                self.done = True
+                self.done = 1
                 break
 
             self.update_game_state()
             self.update_collision_structures()
             self.process_player_input()
-            self.renderer.draw_game(self.game_state)
+            self.draw_game(self.game_state)
             #P.display.flip()
             P.flip()
             InputState.clear_tick_states()
