@@ -43,14 +43,14 @@ class SimpleAI():# """ Simple AI to test interfaces """ - it had Player
 
 DEFAULT_PORT = 45000
 
-@unique
-class NetMessage(IntEnum):#""" All game actions that buttons can be mapped to """
-    C_REGISTER_PLAYER = 1000
-    C_SNAKE_INPUT = 1001
-    S_PLAYER_REGISTERED = 2000
-    S_NEW_PLAYER = 2001
-    S_GAME_UPDATE = 3000
-    S_PLAYER_REFUSED = 8000
+#@unique
+#class NetMessage(IntEnum):#""" All game actions that buttons can be mapped to """
+C_REGISTER_PLAYER = 1000
+C_SNAKE_INPUT = 1001
+S_PLAYER_REGISTERED = 2000
+S_NEW_PLAYER = 2001
+S_GAME_UPDATE = 3000
+S_PLAYER_REFUSED = 8000
 
 # Messages:
 
@@ -128,7 +128,7 @@ MSG_HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 class PlayerRegisterMessage():# """ Register client player to the server """ - it had Message before
     player_id_format = '>i'
     def __init__(self, index, player):
-        self.msg_type = NetMessage.C_REGISTER_PLAYER
+        self.msg_type = C_REGISTER_PLAYER
         self.index = index
         self.player = player
 
@@ -156,7 +156,7 @@ class PlayerRegisterMessage():# """ Register client player to the server """ - i
 class PlayerRegisteredMessage():# """ Register client player to the server """ - it had Message before
     register_format = '>ii'
     def __init__(self, snake_id, remote_id):
-        self.msg_type = NetMessage.S_PLAYER_REGISTERED
+        self.msg_type = S_PLAYER_REGISTERED
         self.snake_id = snake_id
         self.remote_id = remote_id
 
@@ -176,7 +176,7 @@ class PlayerRegisteredMessage():# """ Register client player to the server """ -
 class SnakeInputMessage():# """ Client to server snake control message """ - it had Message before
     input_format = '>ii'
     def __init__(self, snake_id, snake_input):
-        self.msg_type = NetMessage.C_SNAKE_INPUT
+        self.msg_type = C_SNAKE_INPUT
         self.snake_id = snake_id
         self.snake_input = snake_input
 
@@ -202,7 +202,7 @@ class GameStateUpdateMessage(): # """ Game state update message encoding and dec
     snake_part_format = '>3i'
 
     def __init__(self, added_pizzas, removed_pizzas):
-        self.msg_type = NetMessage.S_GAME_UPDATE
+        self.msg_type = S_GAME_UPDATE
         self.added_pizzas = added_pizzas
         self.RMedPZ = removed_pizzas
         self.SN_UPD= []
@@ -301,7 +301,7 @@ class ClientConnection:#    """ Socket encapsulation for sending message to clie
         self.client_socket = client_socket
         self.send_lock = threading.Lock()
 
-        self.message_callbacks = {NetMessage.C_REGISTER_PLAYER: self.parse_register_player,NetMessage.C_SNAKE_INPUT: self.parse_snake_input}
+        self.message_callbacks = {C_REGISTER_PLAYER: self.parse_register_player,C_SNAKE_INPUT: self.parse_snake_input}
         self.__players= {}
         self.__new_players = []
         self.player_lock = threading.Lock()
@@ -358,7 +358,7 @@ class ClientConnection:#    """ Socket encapsulation for sending message to clie
         header = self.client_socket.recv(struct.calcsize(HEADER_FORMAT))
         msg_type, msg_len = struct.unpack_from(HEADER_FORMAT, header, 0)
         payload = self.client_socket.recv(msg_len)
-        self.message_callbacks[NetMessage(msg_type)](payload)
+        self.message_callbacks[msg_type](payload)
 
     def shutdown(self):#   """ Shutdown client connection """
         self.alive = False
@@ -413,7 +413,7 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         print("Connecting to ", server_addr)
         self.sock.connect(server_addr)
-        self.message_callbacks = { NetMessage.S_GAME_UPDATE: self.parse_game_update, NetMessage.S_PLAYER_REGISTERED: self.parse_player_registered }
+        self.message_callbacks = { S_GAME_UPDATE: self.parse_game_update, S_PLAYER_REGISTERED: self.parse_player_registered }
         self.received_game_updates = []
         self.player_to_snake = {}
         print("Connected to {}:{}, self {}".format(server_addr[0],server_addr[1],self.sock.getsockname()))
@@ -437,17 +437,17 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
     def receive_game_uptate(self) -> bool:# """ Listen to messages until a game update        Message has been read, return False if            Connection was closed """
         message_type = 0
         try:
-            while message_type != NetMessage.S_GAME_UPDATE: message_type = self.receive_message()
+            while message_type != S_GAME_UPDATE: message_type = self.receive_message()
         except socket.error:
             print("Connection closed!")
             return False
         return 1
 
-    def receive_message(self) -> NetMessage:#""" Read one server message from socket """
+    def receive_message(self):#""" Read one server message from socket """
         header = self.sock.recv(struct.calcsize(HEADER_FORMAT))
         msg_type, msg_len = struct.unpack_from(HEADER_FORMAT, header, 0)
         payload = self.sock.recv(msg_len)
-        typed_message = NetMessage(msg_type)
+        typed_message = msg_type
         self.message_callbacks[typed_message](payload)
         return typed_message
 
