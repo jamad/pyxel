@@ -11,11 +11,9 @@ from enum import IntEnum, unique, auto
 import pyxel as P
 from pyxel import btn,btnp,quit
 
-class Human():# Player -it had Player arg
-    """ Human player with controls """
+class Human():# Player -it had Player arg  """ Human player with controls """
     def __init__(self, name, input_mapper, keyboard_controls):
         self.name = name
-
         self.input_state = InputState()
         
         if keyboard_controls != (-1, -1):
@@ -67,7 +65,6 @@ class NetMessage(IntEnum):#""" All game actions that buttons can be mapped to ""
 #    [1]*        Player Name characteer
 
 #    SNAKE_INPUT:
-#    bytes       data
 #    4           Message type
 #    4           Message length
 #    4           Snake ID (Must match client's own snake ID)
@@ -75,21 +72,18 @@ class NetMessage(IntEnum):#""" All game actions that buttons can be mapped to ""
 
 # Server to client:
 #    PLAYER_REGISTERED (own information, answer to ADD_PLAYER)
-#    bytes       data
 #    4           Message type
 #    4           Message length
 #    4           Controlled Snake ID
 #    4           Client Specified remote player ID
 
 #    PLAYER_REFUSED (Game full etc.)
-#    bytes       data
 #    4           Message type
 #    4           Message length
 #    4           Client Specified remote player ID
 #    [1]*        Error message
 
 #    NEW_PLAYER (external players)
-#    bytes       data
 #    4           Message type
 #    4           Message length
 #    4           Snake ID
@@ -97,7 +91,6 @@ class NetMessage(IntEnum):#""" All game actions that buttons can be mapped to ""
 #    [1]*        Player Name
 
 #    GAME_STATE_UPDATE:
-#    bytes       data
 #    4           Message Type
 #    4           Message length
 #    4           Pizzas Removed
@@ -137,11 +130,11 @@ class PlayerRegisterMessage():# """ Register client player to the server """ - i
     player_id_format = '>i'
 
     def __init__(self, index, player):
-        super().__init__(NetMessage.C_REGISTER_PLAYER)
+#        super().__init__(NetMessage.C_REGISTER_PLAYER)
+        self.msg_type = NetMessage.C_REGISTER_PLAYER
         self.index = index
         self.player = player
         self.header_format = '>ii'
-#        self.msg_type = msg_type
 
     def message_length(self):return (struct.calcsize(self.player_id_format) +  len(self.player.name) + 1)# """ return message lenght """
     def total_message_size(self):return self.message_length() + struct.calcsize(self.header_format)
@@ -169,7 +162,8 @@ class PlayerRegisterMessage():# """ Register client player to the server """ - i
 class PlayerRegisteredMessage():# """ Register client player to the server """ - it had Message before
     register_format = '>ii'
     def __init__(self, snake_id, remote_id):
-        super().__init__(NetMessage.S_PLAYER_REGISTERED)
+#        super().__init__(NetMessage.S_PLAYER_REGISTERED)
+        self.msg_type = NetMessage.S_PLAYER_REGISTERED
         self.snake_id = snake_id
         self.remote_id = remote_id
         self.header_format = '>ii'
@@ -190,7 +184,9 @@ class PlayerRegisteredMessage():# """ Register client player to the server """ -
 class SnakeInputMessage():# """ Client to server snake control message """ - it had Message before
     input_format = '>ii'
     def __init__(self, snake_id, snake_input):
-        super().__init__(NetMessage.C_SNAKE_INPUT)
+#        super().__init__(NetMessage.C_SNAKE_INPUT)
+        self.msg_type = NetMessage.C_SNAKE_INPUT
+        
         self.snake_id = snake_id
         self.snake_input = snake_input
         self.header_format = '>ii'
@@ -217,7 +213,8 @@ class GameStateUpdateMessage(): # """ Game state update message encoding and dec
     snake_part_format = '>3i'
 
     def __init__(self, added_pizzas, removed_pizzas):
-        super().__init__(NetMessage.S_GAME_UPDATE)
+#        super().__init__(NetMessage.S_GAME_UPDATE)
+        self.msg_type = NetMessage.S_GAME_UPDATE
         self.added_pizzas = added_pizzas
         self.RMedPZ = removed_pizzas
         self.snake_updates= []
