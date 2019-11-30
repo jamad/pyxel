@@ -128,9 +128,7 @@ MSG_HEADER_SIZE = struct.calcsize(MSG_HEADER_FORMAT)
 
 class PlayerRegisterMessage():# """ Register client player to the server """ - it had Message before
     player_id_format = '>i'
-
     def __init__(self, index, player):
-#        super().__init__(NetMessage.C_REGISTER_PLAYER)
         self.msg_type = NetMessage.C_REGISTER_PLAYER
         self.index = index
         self.player = player
@@ -141,7 +139,6 @@ class PlayerRegisterMessage():# """ Register client player to the server """ - i
     def reserve_msg_buffer(self):  return bytearray(self.total_message_size())#""" Reserve big enough buffer for the message """
     def pack_header(self, buffer):return pack_into(self.header_format, buffer, 0, self.msg_type,self.message_length())#""" Write message header, return offset """
 
-
     def encode(self):#""" encode message into bytes """
         msg_bytes = self.reserve_msg_buffer()
         offset = self.pack_header(msg_bytes)
@@ -149,14 +146,13 @@ class PlayerRegisterMessage():# """ Register client player to the server """ - i
         offset += pack_into('{}p'.format(len(self.player.name) + 1), msg_bytes, offset, self.player.name.encode())
         return bytes(msg_bytes)
 
-    
     @staticmethod
     def decode(payload) :# """ Return decoded [remote_id, player_name] tuple """
         remote_id, = struct.unpack_from(PlayerRegisterMessage.player_id_format, payload, 0)
         offset=4
-        #""" Unpack variable lenght str from message payload    """
-        str_len, = struct.unpack_from('B', payload, offset)
+        str_len, = struct.unpack_from('B', payload, offset)#""" Unpack variable lenght str from message payload    """
         name = struct.unpack_from( '{}p'.format(str_len + 1), payload, offset)
+        print('debug name:',name)
         return (remote_id, name)
 
 class PlayerRegisteredMessage():# """ Register client player to the server """ - it had Message before
