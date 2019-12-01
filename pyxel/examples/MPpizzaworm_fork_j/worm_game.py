@@ -1,11 +1,7 @@
-""" Types for player interaction """
-import random
-import math
+import random, math
+import socket, threading,struct
+from enum import IntEnum, auto
 
-import socket
-import threading
-import struct
-from enum import IntEnum, unique, auto
 import pyxel as P
 from pyxel import btn,btnp,quit
 
@@ -33,7 +29,6 @@ class SimpleAI():# """ Simple AI to test interfaces """ - it had Player
 #    def send_update(self, snake_id, added_parts,num_RMVED):pass# """ Interface which remote and AI players can override to upkeep game state """
 
 ##############################################  ALL NETWORKING for the following part  ##########################
-
 DEFAULT_PORT = 45000
 
 #@unique
@@ -599,7 +594,7 @@ class Game:
 
 STATES = []
 
-@unique
+#@unique
 class Action(IntEnum):#    """ All game actions that buttons can be mapped to """
     TURN_LEFT = 0
     TURN_RIGHT = auto() # what is it ???? >> looks coming from enum
@@ -693,6 +688,9 @@ class Pizza:#  the state of one pizza object
     def __init__(self, x, y, r, id):
         self.x = x
         self.y = y
+        n=random.randint(0,360)
+        self.u = .4*math.cos(math.pi/360*n)
+        self.v = .4*math.sin(math.pi/360*n)
         self.r = r
         self.id = id
         self.eaten = 0
@@ -751,10 +749,25 @@ class PizzaManager:# """ Pizza generator and eating logic """
 
     def update_pizzas(self):# """ Remove eaten pizzas, bake new ones to replace them """
         for pizza in self.PZ:
+            pizza.x+=pizza.u
+            pizza.y+=pizza.v
+            if pizza.x<pizza.r:
+                pizza.x=pizza.r
+                pizza.u*=-1
+            if W<pizza.x+pizza.r:
+                pizza.x=W-pizza.r
+                pizza.u*=-1
+            if pizza.y<pizza.r:
+                pizza.y=pizza.r
+                pizza.v*=-1
+            if H<pizza.y+pizza.r:
+                pizza.y=H-pizza.r
+                pizza.v*=-1
+            
             if pizza.eaten:
                 self.RMedPZ+=[pizza.id]
                 self.PZ.remove(pizza)
-        while len(self.PZ) < PZ_NUM: self.generate_pizza()
+        while len(self.PZ)< PZ_NUM: self.generate_pizza() # add more pizza to meet the number
 
     def eat(self, snake):# """ Check if a snake touch to eat some pizzas. Multiple snakes can eat the same pizza before the eaten pizzas are removed at call to 'update'."""
         pos = snake.head()
