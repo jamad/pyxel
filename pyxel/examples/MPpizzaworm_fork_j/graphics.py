@@ -123,23 +123,21 @@ class SnakeGraphics:
 
         POS=snake.new_parts[0]
 
+        c = 11 if player_idx<1 else 8
+
         for part in snake.new_parts:
-            #P.draw.circle(self.image, player_color_index(player_idx, part[2]), [part[0], part[1]], settings.SNAKE_RADIUS)
-            P.circ(part[0], part[1],settings.SNAKE_RADIUS, player_color_index(player_idx, part[2])%16)# color 5 is temporarily
+            P.circ(part[0], part[1],settings.SNAKE_RADIUS, c)# color 5 is temporarily
         snake.new_parts.clear()
         
         for part in snake.removed_parts: 
-            #P.draw.circle(self.image, 0, [part[0], part[1]], settings.SNAKE_RADIUS)
-            P.circ(part[0], part[1],settings.SNAKE_RADIUS,0%16)# color 5 is temporarily
+            P.circ(part[0], part[1],settings.SNAKE_RADIUS,0)# color 5 is temporarily
         snake.removed_parts.clear()
 
         # Replace last part as it was partially removed,
         # clearing could be implemented better with masking
         if len(snake.parts) > 0:
             part = snake.parts[0]
-            corr_col_index = player_color_index(player_idx, part[2])
-            #P.draw.circle(self.image, corr_col_index, [part[0], part[1]],settings.SNAKE_RADIUS)
-            P.circ(part[0], part[1],settings.SNAKE_RADIUS, corr_col_index%16)# color 5 is temporarily
+            P.circ(part[0], part[1],settings.SNAKE_RADIUS, c)# color 5 is temporarily
 
         ######### https://stackoverflow.com/questions/20842801/how-to-display-text-in-pygame
         #self.screen.blit(self.myfont.render(str(player_idx), True, (255, 0, 0)),(POS[0]-3,POS[1]-3)) # 15 -  20% scale down
