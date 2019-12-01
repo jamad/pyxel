@@ -11,7 +11,7 @@ class ClientApp:#  """ Client window that connects to the server """
     def __init__(self, host_addr, port = DEFAULT_PORT):
 #        pygame.init()
         P.init(240,160,scale=2)# pygame >> pyxel
-        self.game_state = GameState()
+        self.GS = GameState()
         self.server_connection = TCPClient((host_addr, port))
         self.done = 0
         self.players = []
@@ -35,20 +35,20 @@ class ClientApp:#  """ Client window that connects to the server """
         '''
     def update_game_state(self):#""" Apply server state updates to local state """
         for game_update in self.server_connection.received_game_updates:
-            self.game_state.remove_pizzas(game_update.removed_pizzas)
-            self.game_state.PZ += game_update.added_pizzas
+            self.GS.remove_pizzas(game_update.removed_pizzas)
+            self.GS.PZ += game_update.added_pizzas
             for sid, sdir, rem_count, parts in game_update.snake_updates:
-                while sid >= len(self.game_state.SN):self.game_state.SN.append(Snake((0, 0, 0)))
-                snake = self.game_state.SN[sid]
+                while sid >= len(self.GS.SN):self.GS.SN.append(Snake((0, 0, 0)))
+                snake = self.GS.SN[sid]
                 snake.dir = sdir
                 snake.add_parts(parts)
                 snake.remove_n_parts(rem_count)
         self.server_connection.received_game_updates.clear()
 
     def update_collision_structures(self):#""" Update collision structure for the use of AI player """
-        for snake in self.game_state.SN:
-            self.game_state.collisions.add_parts(snake.new_parts)
-            self.game_state.collisions.remove_parts(snake.removed_parts)
+        for snake in self.GS.SN:
+            self.GS.COLMGR.add_parts(snake.new_parts)
+            self.GS.COLMGR.remove_parts(snake.removed_parts)
 
     def process_player_input(self):#""" Resolve player input and push it to server """
         for local_id, player in enumerate(self.players):
@@ -70,7 +70,7 @@ class ClientApp:#  """ Client window that connects to the server """
             self.update_game_state()
             self.update_collision_structures()
             self.process_player_input()
-            self.draw_game(self.game_state)
+            self.draw_game(self.GS)
             #P.display.flip()
             P.flip()
             InputState.clear_tick_states()
@@ -86,5 +86,6 @@ GAME = ClientApp(HOST_ADDR)
 # temp disable
 #GAME.add_player(Human('R1', GAME.inputs, (pygame.K_LEFT, pygame.K_RIGHT)))
 #GAME.add_player(Human('R2', GAME.inputs, (pygame.K_a, pygame.K_d)))
+GAME.add_player(Human('P2', GAME.inputs, (P.KEY_A, P.KEY_D)))#(P.K_LEFT, P.K_RIGHT)
 
 GAME.run()
