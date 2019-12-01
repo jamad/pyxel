@@ -561,15 +561,15 @@ class Game:
         for i, snake in enumerate(GS.SN): # execute it for all snakes
             POS=snake.ADDED[0]
             c = 11 if i<1 else 8
-            for part in snake.ADDED:P.circ(part[0], part[1],S_R, c)# color 5 is temporarily
+            for part in snake.ADDED:P.circb(part[0], part[1],S_R, c)# color 5 is temporarily
             snake.ADDED.clear()
             
-            for part in snake.RMVED:P.circ(part[0], part[1],S_R,c)# color 5 is temporarily
+            for part in snake.RMVED:P.circb(part[0], part[1],S_R,c+1)# color 5 is temporarily
             snake.RMVED.clear()
             
             if len(snake.BODY) > 0:
                 part = snake.BODY[0]
-                P.circ(part[0], part[1],S_R,c)
+                P.circb(part[0], part[1],S_R,c+2)
 
             P.text(POS[0],POS[1]-1,str(i),0)# player id shadow
             P.text(POS[0]-1,POS[1]-2,str(i),7 if i<1 else 10)# player id draw
