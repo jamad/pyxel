@@ -451,7 +451,7 @@ class TCPClient:#  """ Class that encapsulate the TCP connection to the server "
 # 20% smaller than original - PLAY_AREA PA=(W,H)
 W=H=240# larger screen - height changed from 160
 
-S_INI_LEN = 4 #20 - SNAKE_INITIAL_LENGTH
+S_INI_LEN = 8 #20 - SNAKE_INITIAL_LENGTH
 S_SPD = 0.8 # 4 - SNAKE_SPEED
 S_R = 2 # 10 - SNAKE_RADIUS
 SD = 2 * S_R #- SNAKE_DIAMETER
@@ -561,15 +561,20 @@ class Game:
         for i, snake in enumerate(GS.SN): # execute it for all snakes
             POS=snake.ADDED[0]
             c = 11 if i<1 else 8
-            for part in snake.ADDED:P.circb(part[0], part[1],S_R, c)# color 5 is temporarily
+            for part in snake.ADDED:
+                P.circ(part[0],  part[1],  S_R,c)# color 5 is temporarily
             snake.ADDED.clear()
             
-            for part in snake.RMVED:P.circb(part[0], part[1],S_R,c+1)# color 5 is temporarily
+            #for part in snake.RMVED:
+            #    P.circ(part[0],  part[1], S_R,1)# color 5 is temporarily
             snake.RMVED.clear()
-            
+
+            for part in snake.BODY:
+                P.circ(part[0], part[1],S_R, c)# color 5 is temporarily
+
             if len(snake.BODY) > 0:
-                part = snake.BODY[0]
-                P.circb(part[0], part[1],S_R,c+2)
+                part = snake.BODY[-1]
+                P.circ(part[0], part[1],S_R+2,c)
 
             P.text(POS[0],POS[1]-1,str(i),0)# player id shadow
             P.text(POS[0]-1,POS[1]-2,str(i),7 if i<1 else 10)# player id draw
