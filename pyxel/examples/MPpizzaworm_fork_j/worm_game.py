@@ -473,7 +473,7 @@ PLAYER_INIT_STATE =[ # posX,posY and orientation
 
 class Game:
     def __init__(self):
-        P.init(W,H,scale=2)# pygame >> pyxel
+        P.init(W,H,scale=1)# pygame >> pyxel
         self.GS = GameState()
         self.ongame=1
         self.frame_num= 0
@@ -749,20 +749,13 @@ class PizzaManager:# """ Pizza generator and eating logic """
 
     def update_pizzas(self):# """ Remove eaten pizzas, bake new ones to replace them """
         for pizza in self.PZ:
+            # pizza reflect motion
             pizza.x+=pizza.u
             pizza.y+=pizza.v
-            if pizza.x<pizza.r:
-                pizza.x=pizza.r
-                pizza.u*=-1
-            if W<pizza.x+pizza.r:
-                pizza.x=W-pizza.r
-                pizza.u*=-1
-            if pizza.y<pizza.r:
-                pizza.y=pizza.r
-                pizza.v*=-1
-            if H<pizza.y+pizza.r:
-                pizza.y=H-pizza.r
-                pizza.v*=-1
+            if pizza.x<pizza.r:pizza.x,pizza.u=pizza.r,pizza.u*-1
+            if W<pizza.x+pizza.r:pizza.x,pizza.u=W-pizza.r,pizza.u*-1
+            if pizza.y<pizza.r:pizza.y,pizza.v=pizza.r,pizza.v*-1
+            if H<pizza.y+pizza.r:pizza.y,pizza.v=H-pizza.r,pizza.v*-1
             
             if pizza.eaten:
                 self.RMedPZ+=[pizza.id]
