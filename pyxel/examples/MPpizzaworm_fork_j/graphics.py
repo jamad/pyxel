@@ -159,18 +159,10 @@ class GameRenderer:
         self.snake_graphics = SnakeGraphics()
 #        self.screen = P.display.set_mode(settings.PLAY_AREA)
 
-    def draw_pizza(self, pizza: Pizza):
-        """ Draw a pizza object to the screen """
-        #P.draw.circle(self.screen, (180, 160, 10), [pizza.x, pizza.y], pizza.radius)
-        P.circ(pizza.x, pizza.y,pizza.radius,5)# color 5 is temporarily
-        #P.draw.circle(self.screen, (255, 210, 10), [pizza.x, pizza.y], max(1,pizza.radius - 0))# 20% scale down
-        P.circ(pizza.x, pizza.y,max(1,pizza.radius - 1),6)# color 6 is temporarily
-        #P.draw.circle(self.screen, (255, 100, 10), [pizza.x, pizza.y], max(1,pizza.radius - 1))# 20% scale down
-        P.circ(pizza.x, pizza.y,max(1,pizza.radius - 2),7)# color 7 is temporarily
-
     def draw_pizzas(self, pizzas):
         """ Draw all pizzas in a list """
-        for pizza in pizzas:self.draw_pizza(pizza)
+        for pz in pizzas:
+            for d,c in zip((0,1,2),(4,10,9)):P.circ(pz.x,pz.y,pz.radius-d,c)# color 5 is temporarily
 
     def draw_game(self, game_state: GameState):
         """ Draw game """
