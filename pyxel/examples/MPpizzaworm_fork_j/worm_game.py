@@ -505,17 +505,22 @@ class Game:
         if btnp(P.KEY_Q):quit()#  # If user clicked closeFlag that we are done so we exit this loop
 #        else:self.inputs.handle_event(event)
 
+        #####  俺のカスタムキーイベント 直接snakeを回転させる
+        if btn(P.KEY_LEFT):self.GS.SN[0].dir+=-S_TURN
+        if btn(P.KEY_RIGHT):self.GS.SN[0].dir+=S_TURN
+
     def gameupdate(self):#""" Game logic update """
         for snake, player in zip(self.GS.SN, self.players):
+            
             snake.snake_update(self.frame_num, player.snake_input)
-            self.GS.COLs.add_parts(snake.ADDED)
-            self.GS.COLs.remove_parts(snake.RMVED)
+            self.GS.COLMGR.add_parts(snake.ADDED)
+            self.GS.COLMGR.remove_parts(snake.RMVED)
             self.GS.PZ_MGR.eat(snake)
-        self.GS.COLs.handle_collisions(self.GS.SN)
+        self.GS.COLMGR.handle_collisions(self.GS.SN)
 
         for snake_id, snake in enumerate(self.GS.SN):
             if len(snake.BODY) > 0 and not snake.alive:
-                self.GS.COLs.remove_parts(snake.BODY)
+                self.GS.COLMGR.remove_parts(snake.BODY)
                 snake.clear()
                 # TODO remove? Game end logic and scoring?
                 snake.reset(*PLAYER_INIT_STATE[snake_id])
@@ -558,16 +563,18 @@ class Game:
             c = 11 if i<1 else 8
             for part in snake.ADDED:P.circ(part[0], part[1],S_R, c)# color 5 is temporarily
             snake.ADDED.clear()
-
+            
             for part in snake.RMVED:P.circ(part[0], part[1],S_R,c)# color 5 is temporarily
             snake.RMVED.clear()
-
+            
             if len(snake.BODY) > 0:
                 part = snake.BODY[0]
                 P.circ(part[0], part[1],S_R,c)
 
             P.text(POS[0],POS[1]-1,str(i),0)# player id shadow
             P.text(POS[0]-1,POS[1]-2,str(i),7 if i<1 else 10)# player id draw
+
+
 
     def run(self):# """ Main Program Loop """
         while self.ongame:
@@ -621,6 +628,7 @@ class InputHandler:#""" Contains button states, handles input mappings to game a
 
     def __init__(self):
         self.button_mappings=[[]for _ in Action]
+
     def handle_event(self, event):#""" Process input mapping for event and update Action state """        
         if event.type != P.KEY_DOWN and event.type != P.KEY_UP:return
         is_down = event.type == P.KEY_DOWN
@@ -701,15 +709,15 @@ class CollisionManager:#  """  use snake body size grid for Snake to snake colis
         for x in ADDED:
             ix = x[0] // SD
             iy = x[1] // SD
-            index = ix+GRID_W*iy
-            if 0 <= index < len(self.COL_GRID):  self.COL_GRID[index].append(x)
+            try:self.COL_GRID[ix+GRID_W*iy]+=[x]
+            except:pass
 
     def remove_parts(self, RMVED):#""" Remove multiple parts from the collision grid """
-        for snake_tail in RMVED:
-            ix = snake_tail[0] // SD
-            iy = snake_tail[1] // SD
-            index = ix+GRID_W*iy
-            if 0 <= index < len(self.COL_GRID): self.COL_GRID[index].remove(snake_tail)
+        for x in RMVED:
+            ix = x[0] // SD
+            iy = x[1] // SD
+            try:self.COL_GRID[ix+GRID_W*iy].remove(x)
+            except:pass
 
     def handle_collisions(self, snakes):#   """ Check all border and snake to snake collisions. """
         def check_border_collisions(snake):# """ Check snake border collision """
@@ -756,7 +764,7 @@ class PizzaManager:# """ Pizza generator and eating logic """
 
 class GameState:#   """ A complete collections of the game state. Contains the state of Pizzas and Snakes """
     def __init__(self):
-        self.COLs = CollisionManager()
+        self.COLMGR = CollisionManager()
         self.SN = []#self.snakes
         self.PZ = []#self.pizzas
 
