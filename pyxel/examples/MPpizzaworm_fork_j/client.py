@@ -21,10 +21,10 @@ class ClientApp:#  """ Client window that connects to the server """
         # might not be needed when syncing to server
 #        self.clock = pygame.time.Clock()
 
-    def add_player(self, player):
-        self.players.append(player)#""" Add a player to the game. """
+        self.add_player(Human('R1', GAME.inputs, (P.KEY_LEFT, P.KEY_RIGHT)))
+        self.add_player(Human('R2', GAME.inputs, (P.KEY_A, P.KEY_D)))#(P.K_LEFT, P.K_RIGHT)
 
-#    def init_client_players(self):for local_id, player in enumerate(self.players):self.server_connection.register_player(local_id, player)#""" Register client players to the server """
+    def add_player(self, player):self.players.append(player)#""" Add a player to the game. """
 
     def handle_events(self):#""" Main event pump """
         ''' tmp disable
@@ -56,7 +56,6 @@ class ClientApp:#  """ Client window that connects to the server """
             self.server_connection.send_snake_input(local_id,player.get_snake_input())
 
     def run(self):#""" Main Program Loop """
-#        self.init_client_players()
         for local_id, player in enumerate(self.players):
             self.server_connection.register_player(local_id, player)#""" Register client players to the server """
 
@@ -86,6 +85,5 @@ GAME = ClientApp(HOST_ADDR)
 # temp disable
 #GAME.add_player(Human('R1', GAME.inputs, (pygame.K_LEFT, pygame.K_RIGHT)))
 #GAME.add_player(Human('R2', GAME.inputs, (pygame.K_a, pygame.K_d)))
-GAME.add_player(Human('P2', GAME.inputs, (P.KEY_A, P.KEY_D)))#(P.K_LEFT, P.K_RIGHT)
 
 GAME.run()

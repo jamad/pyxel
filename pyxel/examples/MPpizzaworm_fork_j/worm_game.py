@@ -106,9 +106,15 @@ S_PLAYER_REFUSED = 8000
 
 def int_to_bytes(x):return x.to_bytes(4, byteorder='big') #   """ Convert int to bytes """
 def bytes_to_int(byte_array):return int.from_bytes(byte_array, byteorder='big')#    """ Bytes to int """
-def pack_into(fmt, buffer, offset, *args):#    """ Pack data with struct.pack_into and given data format.        return the size of the output data with that format.        Use offset += pack_into() to update the offset for next call """
-    struct.pack_into(fmt, buffer, offset, *args)
-    return struct.calcsize(fmt)
+def pack_into(fmt, buffer, offset, *args): 
+    """ Pack data with struct.pack_into and given data format.return the size of the output data with that format.
+        Use offset += pack_into() to update the offset for next call """
+    try:
+        struct.pack_into(fmt, buffer, offset, *args)
+        return struct.calcsize(fmt)
+    except Exception as e:
+        print(e)
+        assert 1
 
 HEADER_FORMAT = '>ii'
 MSG_HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
@@ -574,8 +580,6 @@ class Game:
             P.text(POS[0],POS[1]-1,str(i),0)# player id shadow
             P.text(POS[0]-1,POS[1]-2,str(i),7 if i<1 else 10)# player id draw
 
-
-
     def run(self):# """ Main Program Loop """
         while self.ongame:
             P.cls
@@ -663,7 +667,6 @@ class Snake:#    """ Contains the state of a single snake object """
     def add_part(self, x):# """ Add a single part to the snake head """
         self.BODY+=[x]
         self.ADDED+=[x]
-#        print(len(self.BODY),len(self.ADDED))
 
     def add_parts(self, G):# """ Add multi bodies to the snake head """
         for x in G:self.add_part(x)
@@ -705,7 +708,6 @@ class CollisionManager:#  """  use snake body size grid for Snake to snake colis
         for i in range(max(ix - 1, 0), min(ix + 2, GRID_W)):
             for j in range(max(0, iy - 1), min(iy + 2, GRID_H)):
                 COLs += [ p for p in self.COL_GRID[i+GRID_W*j] if (p[0] - x[0])**2 + (p[1] - x[1])**2 < SD**2    ]
-#        print('COLs',COLs)
         return COLs
 
     def add_parts(self, ADDED):# """ Update the collision grid with several Snake parts """
